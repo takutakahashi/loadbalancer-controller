@@ -1,3 +1,4 @@
+variable region {}
 variable vpc_id {}
 
 variable lb_name {}

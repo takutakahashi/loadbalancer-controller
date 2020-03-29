@@ -32,6 +32,7 @@ type AWSBackendSpec struct {
 	Internal  bool           `json:"internal,omitempty"`
 	Type      AWSBackendType `json:"type,omitempty"`
 	VPC       Identifier     `json:"vpc,omitempty"`
+	Region    string         `json:"region,omitempty"`
 	Subnets   []Identifier   `json:"subnets,omitempty"`
 	Listeners []Listener     `json:"listeners"`
 }

@@ -3,6 +3,7 @@ kind: AWSBackend
 metadata:
   name: awsbackend-sample
 spec:
+  region: ap-northeast-1
   type: network
   vpc:
     id: vpc-082f7dcbe447d7ba7
