@@ -29,7 +29,71 @@ type AWSBackendSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of AWSBackend. Edit AWSBackend_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Internal  bool           `json:"internal,omitempty"`
+	Type      AWSBackendType `json:"type,omitempty"`
+	VPC       Identifier     `json:"vpc,omitempty"`
+	Subnets   []Identifier   `json:"subnets,omitempty"`
+	Listeners []Listener     `json:"listeners"`
+}
+
+type Listener struct {
+	Port          int                `json:"port"`
+	Protocol      AWSBackendProtocol `json:"protocol"`
+	DefaultAction AWSBackendAction   `json:"defaultAction"`
+}
+
+type AWSBackendAction struct {
+	Type        AWSBackendActionType  `json:"type"`
+	TargetGroup AWSBackendTargetGroup `json:"targetGroup"`
+}
+
+type AWSBackendTargetGroup struct {
+	Port       int                  `json:"port"`
+	Protocol   AWSBackendProtocol   `json:"protocol"`
+	TargetType AWSBackendTargetType `json:"targetType"`
+	Targets    []AWSBackendTarget   `json:"targets"`
+}
+
+type AWSBackendTarget struct {
+	Destination AWSBackendDestination `json:"destination"`
+	Port        int                   `json:"port"`
+}
+
+type AWSBackendDestination struct {
+	InstanceID string `json:"instanceID,omitempty"`
+	IP         string `json:"IP,omitempty"`
+}
+
+type AWSBackendActionType string
+
+var (
+	ActionTypeForward AWSBackendActionType = "forward"
+)
+
+type AWSBackendTargetType string
+
+var (
+	TargetTypeIP       AWSBackendTargetType = "ip"
+	TargetTypeInstance AWSBackendTargetType = "instance"
+)
+
+type AWSBackendProtocol string
+
+var (
+	AWSBackendProtocolTCP = "TCP"
+	AWSBackendProtocolUDP = "UDP"
+)
+
+type AWSBackendType string
+
+var (
+	TypeApplication AWSBackendType = "application"
+	TypeNetwork     AWSBackendType = "network"
+)
+
+type Identifier struct {
+	Name string `json:"name,omitempty"`
+	ID   string `json:"id,omitempty"`
 }
 
 // AWSBackendStatus defines the observed state of AWSBackend
