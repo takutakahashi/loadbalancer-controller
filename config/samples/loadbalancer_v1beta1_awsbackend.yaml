@@ -1,0 +1,7 @@
+apiVersion: loadbalancer.takutakahashi.dev/v1beta1
+kind: AWSBackend
+metadata:
+  name: awsbackend-sample
+spec:
+  # Add fields here
+  foo: bar

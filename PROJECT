@@ -1,3 +1,13 @@
 domain: takutakahashi.dev
 repo: github.com/takutakahashi/loadbalancer-controller
+resources:
+- group: loadbalancer
+  kind: Loadbalancer
+  version: v1beta1
+- group: loadbalancer
+  kind: AWSBackend
+  version: v1beta1
+- group: loadbalancer
+  kind: ExternalBackend
+  version: v1beta1
 version: "2"

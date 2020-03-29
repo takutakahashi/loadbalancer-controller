@@ -1,0 +1,24 @@
+# permissions for end users to edit awsbackends.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: awsbackend-editor-role
+rules:
+- apiGroups:
+  - loadbalancer.takutakahashi.dev
+  resources:
+  - awsbackends
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - loadbalancer.takutakahashi.dev
+  resources:
+  - awsbackends/status
+  verbs:
+  - get

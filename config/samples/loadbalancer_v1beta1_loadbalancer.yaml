@@ -1,0 +1,22 @@
+apiVersion: loadbalancer.takutakahashi.dev/v1beta1
+kind: Loadbalancer
+metadata:
+  name: loadbalancer-aws-sample
+spec:
+  backend:
+    awsLoadbalancerBackendRef:
+      name: aws-nlb-sample
+status:
+  globalIP: 12.34.56.7
+
+---
+apiVersion: loadbalancer.takutakahashi.dev/v1beta1
+kind: Loadbalancer
+metadata:
+  name: loadbalancer-aws-sample
+spec:
+  backend:
+    extLoadbalancerBackendRef:
+      name: aws-nlb-sample
+status:
+  globalIP: 12.34.56.8

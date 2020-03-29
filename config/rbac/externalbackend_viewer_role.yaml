@@ -1,0 +1,20 @@
+# permissions for end users to view externalbackends.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: externalbackend-viewer-role
+rules:
+- apiGroups:
+  - loadbalancer.takutakahashi.dev
+  resources:
+  - externalbackends
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - loadbalancer.takutakahashi.dev
+  resources:
+  - externalbackends/status
+  verbs:
+  - get
