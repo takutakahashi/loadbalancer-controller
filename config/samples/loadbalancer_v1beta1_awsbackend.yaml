@@ -3,5 +3,20 @@ kind: AWSBackend
 metadata:
   name: awsbackend-sample
 spec:
-  # Add fields here
-  foo: bar
+  type: network
+  vpc:
+    id: vpc-082f7dcbe447d7ba7
+  subnets:
+    - id: subnet-04ddc1d62069e344c
+  listeners:
+    - port: 443
+      protocol: TCP
+      defaultAction:
+        type: forward
+        targetGroup:
+          port: 443
+          protocol: TCP
+          targetType: ip
+          targets:
+            - destination: 10.0.0.11
+              port: 443
