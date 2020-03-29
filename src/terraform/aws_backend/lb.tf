@@ -2,6 +2,7 @@ resource "aws_lb" "loadbalancer" {
   name               = var.lb_name
   internal           = var.lb_internal
   load_balancer_type = var.lb_type
+  subnets            = var.lb_subnets
 
   enable_deletion_protection = var.lb_protection
 

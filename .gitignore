@@ -26,3 +26,4 @@ bin
 .envrc
 *.tfvars
 .terraform
+backend.tf
