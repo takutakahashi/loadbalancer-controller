@@ -22,3 +22,7 @@ bin
 *.swp
 *.swo
 *~
+
+.envrc
+*.tfvars
+.terraform
