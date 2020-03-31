@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	loadbalancerv1beta1 "github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
+	"github.com/takutakahashi/loadbalancer-controller/pkg/terraform"
 )
 
 // AWSBackendReconciler reconciles a AWSBackend object
@@ -38,11 +39,21 @@ type AWSBackendReconciler struct {
 // +kubebuilder:rbac:groups=loadbalancer.takutakahashi.dev,resources=awsbackends/status,verbs=get;update;patch
 
 func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	_ = r.Log.WithValues("awsbackend", req.NamespacedName)
-
-	// your logic here
-
+	var backend loadbalancerv1beta1.AWSBackend
+	err := r.Get(ctx, req.NamespacedName, &backend)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	tc, err := terraform.NewClientForAWSBackend(backend)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	err = tc.Apply()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 	return ctrl.Result{}, nil
 }
 
