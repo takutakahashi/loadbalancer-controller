@@ -26,4 +26,8 @@ target_group_protocol = "{{ $tg.Protocol }}"
 target_group_type = "{{ $tg.TargetType }}"
 
 target_port = {{ $tg.Port }}
-targets = ["10.0.0.10"]
+targets = [
+{{- range $i, $t := $tg.Targets }}
+  "{{ $t.Destination }}"
+{{- end }}
+]
