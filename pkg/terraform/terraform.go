@@ -11,7 +11,7 @@ import (
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 )
 
-var BASE_DIR string = "/home/takutaka/.go/src/github.com/takutakahashi/loadbalancer-controller"
+var BASE_DIR string = os.Getenv("PROJECT_ROOT")
 
 type TerraformClient struct {
 	awsBackend     *v1beta1.AWSBackend
