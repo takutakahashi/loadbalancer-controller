@@ -1,4 +1,4 @@
-package client
+package terraform
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ import (
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 )
 
-var BASE_DIR string = "/app"
+var BASE_DIR string = "/home/takutaka/.go/src/github.com/takutakahashi/loadbalancer-controller"
 
 type TerraformClient struct {
 	awsBackend     *v1beta1.AWSBackend
@@ -19,25 +19,39 @@ type TerraformClient struct {
 	tfstateBackend string
 }
 
-func (t TerraformClient) execute(c string) error {
+func (t TerraformClient) execute(c string, force bool) ([]byte, error) {
 	prev, err := os.Getwd()
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
 	if err = os.Chdir(t.workDir()); err != nil {
-		return err
+		return []byte{}, err
 	}
 	defer os.Chdir(prev)
-	cmd := exec.Command("terraform", c, "-auto-approve", "-var-file", t.tfvarsPath)
-	return cmd.Run()
+	init := exec.Command("terraform", "init")
+	init.Env = os.Environ()
+	o, err := init.Output()
+	if err != nil {
+		return o, err
+	}
+	var cmd *exec.Cmd
+	if force {
+		cmd = exec.Command("terraform", c, "-auto-approve", "-var-file", t.tfvarsPath)
+	} else {
+		cmd = exec.Command("terraform", c, "-var-file", t.tfvarsPath)
+	}
+	cmd.Env = os.Environ()
+	return cmd.Output()
 }
 
 func (t TerraformClient) Apply() error {
-	return t.execute("apply")
+	_, err := t.execute("apply", true)
+	return err
 }
 
 func (t TerraformClient) Destroy() error {
-	return t.execute("destroy")
+	_, err := t.execute("destroy", true)
+	return err
 }
 
 func genTfVarsPath() string {
@@ -66,6 +80,22 @@ func (t TerraformClient) genTfvars(w io.Writer) error {
 	return nil
 }
 
+func NewClientForAWSBackend(awsBackend v1beta1.AWSBackend) (TerraformClient, error) {
+	tc := TerraformClient{}
+	tfvarsPath := genTfVarsPath()
+	f, err := os.Create(tfvarsPath)
+	if err != nil {
+		return tc, err
+	}
+	defer f.Close()
+	tc.awsBackend = &awsBackend
+	err = tc.genTfvars(f)
+	if err != nil {
+		return TerraformClient{}, err
+	}
+	tc.tfvarsPath = tfvarsPath
+	return tc, nil
+}
 func NewClient(lb v1beta1.Loadbalancer) (TerraformClient, error) {
 	tc := TerraformClient{}
 	tfvarsPath := genTfVarsPath()
