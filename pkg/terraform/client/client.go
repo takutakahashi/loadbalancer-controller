@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"text/template"
@@ -43,32 +44,38 @@ func genTfVarsPath() string {
 	return fmt.Sprintf("/tmp/%s.tfvars", uuid.New().String())
 }
 
-func (t TerraformClient) genTfvars() (string, error) {
-	tfvarsPath := genTfVarsPath()
-	f, err := os.Create(tfvarsPath)
-	if err != nil {
-		return "", nil
-	}
-	defer f.Close()
+func (t TerraformClient) genTfvars(w io.Writer) error {
 	awsBackend := t.awsBackend
 	if awsBackend != nil {
-		tmpl, err := template.New("var.tfvars").ParseFiles(t.workDir() + "/template.tfvars.tpl")
+		tmpl, err := template.ParseFiles(t.workDir() + "/template.tfvars.tpl")
 		if err != nil {
-			return "", err
+			return err
 		}
-		err = tmpl.Execute(f, &awsBackend)
+		err = tmpl.Execute(w, struct {
+			B         *v1beta1.AWSBackend
+			ServiceIn bool
+		}{
+			B:         awsBackend,
+			ServiceIn: false,
+		})
 		if err != nil {
-			return "", err
+			return err
 		}
-		return tfvarsPath, nil
+		return nil
 	}
-	return "", nil
+	return nil
 }
 
 func NewClient(lb v1beta1.Loadbalancer) (TerraformClient, error) {
 	tc := TerraformClient{}
+	tfvarsPath := genTfVarsPath()
+	f, err := os.Create(tfvarsPath)
+	if err != nil {
+		return tc, err
+	}
+	defer f.Close()
 	tc.awsBackend = &lb.Spec.AWSBackend
-	tfvarsPath, err := tc.genTfvars()
+	err = tc.genTfvars(f)
 	if err != nil {
 		return TerraformClient{}, err
 	}

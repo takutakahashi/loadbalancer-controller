@@ -81,8 +81,8 @@ var (
 type AWSBackendProtocol string
 
 var (
-	AWSBackendProtocolTCP = "TCP"
-	AWSBackendProtocolUDP = "UDP"
+	AWSBackendProtocolTCP AWSBackendProtocol = "TCP"
+	AWSBackendProtocolUDP AWSBackendProtocol = "UDP"
 )
 
 type AWSBackendType string
