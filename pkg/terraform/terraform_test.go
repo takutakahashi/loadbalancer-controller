@@ -18,6 +18,17 @@ func TestGenTfvars(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+func TestInit(t *testing.T) {
+	cli, err := NewClient(lbMock())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cli.tfvarsPath)
+	err = cli.init()
+	if err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestExecute(t *testing.T) {
 	cli, err := NewClient(lbMock())

@@ -19,6 +19,24 @@ type TerraformClient struct {
 	tfstateBackend string
 }
 
+func (t TerraformClient) init() error {
+	prev, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if err = os.Chdir(t.workDir()); err != nil {
+		return err
+	}
+	defer os.Chdir(prev)
+	init := exec.Command("terraform", "init")
+	init.Env = os.Environ()
+	err = init.Run()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (t TerraformClient) execute(c string, force bool) ([]byte, error) {
 	prev, err := os.Getwd()
 	if err != nil {
@@ -28,12 +46,7 @@ func (t TerraformClient) execute(c string, force bool) ([]byte, error) {
 		return []byte{}, err
 	}
 	defer os.Chdir(prev)
-	init := exec.Command("terraform", "init")
-	init.Env = os.Environ()
-	o, err := init.Output()
-	if err != nil {
-		return o, err
-	}
+	err = t.init()
 	var cmd *exec.Cmd
 	if force {
 		cmd = exec.Command("terraform", c, "-auto-approve", "-var-file", t.tfvarsPath)
