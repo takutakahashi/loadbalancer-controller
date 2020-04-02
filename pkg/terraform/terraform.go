@@ -9,6 +9,9 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
+	batchv1 "k8s.io/api/batch/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var BASE_DIR string = os.Getenv("PROJECT_ROOT")
@@ -36,25 +39,24 @@ func (t TerraformClient) init() error {
 	}
 	return nil
 }
+func (t TerraformClient) createTfVarsSecret() error {
+	return nil
+}
+func (t TerraformClient) createJob(ops string, force bool) error {
+	_ = t.buildJob(ops, force)
+	return nil
+}
 
-func (t TerraformClient) execute(c string, force bool) ([]byte, error) {
-	prev, err := os.Getwd()
+func (t TerraformClient) execute(ops string, force bool) ([]byte, error) {
+	err := t.createTfVarsSecret()
 	if err != nil {
 		return []byte{}, err
 	}
-	if err = os.Chdir(t.workDir()); err != nil {
+	err = t.createJob(ops, force)
+	if err != nil {
 		return []byte{}, err
 	}
-	defer os.Chdir(prev)
-	err = t.init()
-	var cmd *exec.Cmd
-	if force {
-		cmd = exec.Command("terraform", c, "-auto-approve", "-var-file", t.tfvarsPath)
-	} else {
-		cmd = exec.Command("terraform", c, "-var-file", t.tfvarsPath)
-	}
-	cmd.Env = os.Environ()
-	return cmd.Output()
+	return []byte{}, nil
 }
 
 func (t TerraformClient) Apply() error {
@@ -131,4 +133,43 @@ func (t TerraformClient) workDir() string {
 		return BASE_DIR + "/src/terraform/aws_backend"
 	}
 	return ""
+}
+
+func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
+	// secretName := ""
+	om := metav1.ObjectMeta{
+		Name:      t.awsBackend.Name,
+		Namespace: t.awsBackend.Namespace,
+	}
+	cmd := []string{"/bin/terraform.sh", ops, t.awsBackend.Kind}
+	if force {
+		cmd = append(cmd, "force")
+	}
+	return batchv1.Job{
+		ObjectMeta: om,
+		Spec: batchv1.JobSpec{
+			Template: corev1.PodTemplateSpec{
+				Spec: corev1.PodSpec{
+					RestartPolicy: corev1.RestartPolicyOnFailure,
+					Containers: []corev1.Container{
+						corev1.Container{
+							Name:    "tf",
+							Image:   "takutakahashi/loadbalancer-controller",
+							Command: cmd,
+							//		EnvFrom: []corev1.EnvFromSource{
+							//			corev1.EnvFromSource{
+							//				SecretRef: &corev1.SecretEnvSource{
+							//					LocalObjectReference: corev1.LocalObjectReference{
+							//						Name: secretName,
+							//					},
+							//				},
+							//			},
+							//		},
+						},
+					},
+				},
+			},
+		},
+	}
+
 }

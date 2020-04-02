@@ -30,6 +30,16 @@ func TestInit(t *testing.T) {
 	}
 }
 
+func TestBuildJob(t *testing.T) {
+	cli, err := NewClient(lbMock())
+	if err != nil {
+		t.Fatal(err)
+	}
+	job := cli.buildJob("plan", true)
+	t.Log(job.Spec.Template.Spec.Containers[0].Command)
+	t.Fatal(job.String())
+}
+
 func TestExecute(t *testing.T) {
 	cli, err := NewClient(lbMock())
 	if err != nil {
@@ -45,6 +55,9 @@ func TestExecute(t *testing.T) {
 
 func awsBackendMock() v1beta1.AWSBackend {
 	return v1beta1.AWSBackend{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "AWSBackend",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "aws-lb-test",
 			Namespace: "default",
