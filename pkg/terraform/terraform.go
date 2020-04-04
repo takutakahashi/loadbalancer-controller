@@ -24,25 +24,25 @@ type TerraformClient struct {
 	tfstateBackend string
 }
 
-func (t TerraformClient) createTfVarsSecret() error {
-	sc := t.clientset.CoreV1().Secrets(t.awsBackend.Namespace)
+func (t TerraformClient) createTfVars() error {
+	sc := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace)
 	tfvars, err := t.genTfvars()
 	if err != nil {
 		return err
 	}
 	sd := map[string]string{"tfvars": tfvars}
-	secret, err := sc.Get(t.awsBackend.Name, metav1.GetOptions{})
+	configmap, err := sc.Get(t.awsBackend.Name, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
-		newSecret := corev1.Secret{
+		newConfigMap := corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      t.awsBackend.Name,
 				Namespace: t.awsBackend.Namespace,
 			},
-			StringData: sd}
-		_, err = sc.Create(&newSecret)
+			Data: sd}
+		_, err = sc.Create(&newConfigMap)
 	} else if err == nil {
-		secret.StringData = sd
-		_, err = sc.Update(secret)
+		configmap.Data = sd
+		_, err = sc.Update(configmap)
 	}
 	return err
 }
@@ -53,7 +53,7 @@ func (t TerraformClient) createJob(ops string, force bool) error {
 }
 
 func (t TerraformClient) execute(ops string, force bool) error {
-	err := t.createTfVarsSecret()
+	err := t.createTfVars()
 	if err != nil {
 		return err
 	}
@@ -136,17 +136,35 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 					Containers: []corev1.Container{
 						corev1.Container{
 							Name:    "tf",
-							Image:   "takutakahashi/loadbalancer-controller",
+							Image:   "takutakahashi/loadbalancer-controller-toolkit",
 							Command: cmd,
-							//		EnvFrom: []corev1.EnvFromSource{
-							//			corev1.EnvFromSource{
-							//				SecretRef: &corev1.SecretEnvSource{
-							//					LocalObjectReference: corev1.LocalObjectReference{
-							//						Name: secretName,
-							//					},
-							//				},
-							//			},
-							//		},
+							VolumeMounts: []corev1.VolumeMount{
+								corev1.VolumeMount{
+									Name:      t.awsBackend.Name,
+									MountPath: "/data",
+								},
+							},
+							EnvFrom: []corev1.EnvFromSource{
+								corev1.EnvFromSource{
+									SecretRef: &corev1.SecretEnvSource{
+										LocalObjectReference: corev1.LocalObjectReference{
+											Name: t.awsBackend.Name,
+										},
+									},
+								},
+							},
+						},
+					},
+					Volumes: []corev1.Volume{
+						corev1.Volume{
+							Name: t.awsBackend.Name,
+							VolumeSource: corev1.VolumeSource{
+								ConfigMap: &corev1.ConfigMapVolumeSource{
+									LocalObjectReference: corev1.LocalObjectReference{
+										Name: t.awsBackend.Name,
+									},
+								},
+							},
 						},
 					},
 				},

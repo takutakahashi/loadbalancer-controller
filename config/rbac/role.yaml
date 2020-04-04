@@ -9,6 +9,46 @@ rules:
 - apiGroups:
   - loadbalancer.takutakahashi.dev
   resources:
+  - awsbackends
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - loadbalancer.takutakahashi.dev
+  resources:
+  - awsbackends/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - loadbalancer.takutakahashi.dev
+  resources:
+  - externalbackends
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - loadbalancer.takutakahashi.dev
+  resources:
+  - externalbackends/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - loadbalancer.takutakahashi.dev
+  resources:
   - loadbalancers
   verbs:
   - create

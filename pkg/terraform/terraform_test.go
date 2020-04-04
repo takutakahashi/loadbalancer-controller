@@ -62,12 +62,12 @@ func TestExecute(t *testing.T) {
 			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
 		}
 	}
-	secret, err := clientset.CoreV1().Secrets(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
+	cm, err := clientset.CoreV1().ConfigMaps(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := secret.Data["tfvars"]; !ok {
-		t.Fatal(secret)
+	if _, ok := cm.Data["tfvars"]; !ok {
+		t.Fatal(cm)
 	}
 }
 
@@ -97,40 +97,15 @@ func TestApply(t *testing.T) {
 			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
 		}
 	}
-	secret, err := clientset.CoreV1().Secrets(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
+	cm, err := clientset.CoreV1().ConfigMaps(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, ok := secret.Data["tfvars"]; !ok {
-		t.Fatal(secret)
+	if _, ok := cm.Data["tfvars"]; !ok {
+		t.Fatal(cm)
 	}
 }
 
-func TestCreateSecret(t *testing.T) {
-	lb := lbMock()
-	cli, err := NewClient(lb)
-	if err != nil {
-		t.Fatal(err)
-	}
-	testEnv, clientset, err := clientsetMock()
-	defer testEnv.Stop()
-	if err != nil {
-		t.Fatal(err)
-	}
-	cli.clientset = clientset
-
-	err = cli.createTfVarsSecret()
-	if err != nil {
-		t.Fatal(err)
-	}
-	secret, err := clientset.CoreV1().Secrets(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := secret.Data["tfvars"]; !ok {
-		t.Fatal(secret)
-	}
-}
 func TestGenTfvars(t *testing.T) {
 	lb := lbMock()
 	cli, err := NewClient(lb)
@@ -138,7 +113,10 @@ func TestGenTfvars(t *testing.T) {
 		t.Fatal(err)
 	}
 	expected, err := cli.genTfvars()
-	t.Fatal(expected)
+	if err != nil {
+		t.Log(expected)
+		t.Fatal(err)
+	}
 }
 
 func awsBackendMock() v1beta1.AWSBackend {
