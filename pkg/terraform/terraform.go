@@ -144,13 +144,14 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 									MountPath: "/data",
 								},
 							},
-							EnvFrom: []corev1.EnvFromSource{
-								corev1.EnvFromSource{
-									SecretRef: &corev1.SecretEnvSource{
-										LocalObjectReference: corev1.LocalObjectReference{
-											Name: t.awsBackend.Name,
-										},
-									},
+							Env: []corev1.EnvVar{
+								corev1.EnvVar{
+									Name:      "AWS_ACCESS_KEY_ID",
+									ValueFrom: t.awsBackend.Spec.Credentials.AccesskeyID,
+								},
+								corev1.EnvVar{
+									Name:      "AWS_SECRET_ACCESS_KEY",
+									ValueFrom: t.awsBackend.Spec.Credentials.SecretAccesskey,
 								},
 							},
 						},

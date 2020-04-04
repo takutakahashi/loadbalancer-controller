@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,12 +30,18 @@ type AWSBackendSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of AWSBackend. Edit AWSBackend_types.go to remove/update
-	Internal  bool           `json:"internal,omitempty"`
-	Type      AWSBackendType `json:"type,omitempty"`
-	VPC       Identifier     `json:"vpc,omitempty"`
-	Region    string         `json:"region,omitempty"`
-	Subnets   []Identifier   `json:"subnets,omitempty"`
-	Listeners []Listener     `json:"listeners"`
+	Internal    bool                  `json:"internal,omitempty"`
+	Credentials AWSBackendCredentials `json:"credentials"`
+	Type        AWSBackendType        `json:"type,omitempty"`
+	VPC         Identifier            `json:"vpc,omitempty"`
+	Region      string                `json:"region,omitempty"`
+	Subnets     []Identifier          `json:"subnets,omitempty"`
+	Listeners   []Listener            `json:"listeners"`
+}
+
+type AWSBackendCredentials struct {
+	AccesskeyID     *corev1.EnvVarSource `json:"accessKeyID"`
+	SecretAccesskey *corev1.EnvVarSource `json:"secretAccessKey"`
 }
 
 type Listener struct {
