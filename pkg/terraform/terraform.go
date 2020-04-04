@@ -47,26 +47,24 @@ func (t TerraformClient) createJob(ops string, force bool) error {
 	return nil
 }
 
-func (t TerraformClient) execute(ops string, force bool) ([]byte, error) {
+func (t TerraformClient) execute(ops string, force bool) error {
 	err := t.createTfVarsSecret()
 	if err != nil {
-		return []byte{}, err
+		return err
 	}
 	err = t.createJob(ops, force)
 	if err != nil {
-		return []byte{}, err
+		return err
 	}
-	return []byte{}, nil
+	return nil
 }
 
 func (t TerraformClient) Apply() error {
-	_, err := t.execute("apply", true)
-	return err
+	return t.execute("apply", true)
 }
 
 func (t TerraformClient) Destroy() error {
-	_, err := t.execute("destroy", true)
-	return err
+	return t.execute("destroy", true)
 }
 
 func genTfVarsPath() string {
