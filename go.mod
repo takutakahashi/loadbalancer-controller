@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/go-logr/logr v0.1.0
 	github.com/google/uuid v1.1.1
+	github.com/juju/errors v0.0.0-20200330140219-3fe23663418f
 	github.com/labstack/gommon v0.3.0
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1

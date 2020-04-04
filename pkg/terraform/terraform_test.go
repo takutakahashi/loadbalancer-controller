@@ -2,11 +2,24 @@ package terraform
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
+
+func clientsetMock() (*envtest.Environment, *kubernetes.Clientset, error) {
+	testEnv := &envtest.Environment{}
+	restConfig, err := testEnv.Start()
+	if err != nil {
+		return testEnv, nil, err
+	}
+	c, e := kubernetes.NewForConfig(restConfig)
+	return testEnv, c, e
+}
 
 func TestGenTfvars(t *testing.T) {
 	cli, err := NewClient(lbMock())
@@ -18,6 +31,7 @@ func TestGenTfvars(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
 func TestInit(t *testing.T) {
 	cli, err := NewClient(lbMock())
 	if err != nil {
@@ -30,21 +44,45 @@ func TestInit(t *testing.T) {
 	}
 }
 
-func TestExecute(t *testing.T) {
+func TestBuildJob(t *testing.T) {
 	cli, err := NewClient(lbMock())
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(cli.tfvarsPath)
-	o, err := cli.execute("plan", false)
-	t.Log(string(o))
+	job := cli.buildJob("plan", true)
+	t.Log(job.Spec.Template.Spec.Containers[0].Command)
+	t.Fatal(job.String())
+}
+
+func TestExecute(t *testing.T) {
+	lb := lbMock()
+	cli, err := NewClient(lb)
 	if err != nil {
 		t.Fatal(err)
+	}
+	testEnv, clientset, err := clientsetMock()
+	defer testEnv.Stop()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(cli.tfvarsPath)
+	err = cli.execute("plan", false)
+	job, err := clientset.BatchV1().Jobs(lb.Namespace).Get(lb.Spec.AWSBackend.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []string{"/bin/terraform.sh", "plan", "AWSBackend"}
+	if reflect.DeepEqual(job.Spec.Template.Spec.Containers[0].Command, expected) {
+		t.Fatal(job)
+
 	}
 }
 
 func awsBackendMock() v1beta1.AWSBackend {
 	return v1beta1.AWSBackend{
+		TypeMeta: metav1.TypeMeta{
+			Kind: "AWSBackend",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "aws-lb-test",
 			Namespace: "default",
@@ -89,6 +127,10 @@ func awsBackendMock() v1beta1.AWSBackend {
 }
 func lbMock() v1beta1.Loadbalancer {
 	return v1beta1.Loadbalancer{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-lb",
+			Namespace: "default",
+		},
 		Spec: v1beta1.LoadbalancerSpec{
 			AWSBackend: awsBackendMock(),
 		},
