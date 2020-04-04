@@ -142,10 +142,10 @@ func awsBackendMock() v1beta1.AWSBackend {
 		Spec: v1beta1.AWSBackendSpec{
 			Internal: false,
 			Type:     v1beta1.TypeNetwork,
-			VPC:      v1beta1.Identifier{ID: "aaa"},
+			VPC:      v1beta1.Identifier{ID: "vpc-082f7dcbe447d7ba7"},
 			Subnets: []v1beta1.Identifier{
 				v1beta1.Identifier{
-					ID: "iii",
+					ID: "subnet-04ddc1d62069e344c",
 				},
 			},
 			Region: "ap-northeast-1",
