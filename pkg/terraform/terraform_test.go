@@ -1,8 +1,6 @@
 package terraform
 
 import (
-	"os"
-	"reflect"
 	"testing"
 
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
@@ -21,37 +19,21 @@ func clientsetMock() (*envtest.Environment, *kubernetes.Clientset, error) {
 	return testEnv, c, e
 }
 
-func TestGenTfvars(t *testing.T) {
-	cli, err := NewClient(lbMock())
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = cli.genTfvars(os.Stdout)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestInit(t *testing.T) {
-	cli, err := NewClient(lbMock())
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(cli.tfvarsPath)
-	err = cli.init()
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestBuildJob(t *testing.T) {
 	cli, err := NewClient(lbMock())
 	if err != nil {
 		t.Fatal(err)
 	}
-	job := cli.buildJob("plan", true)
-	t.Log(job.Spec.Template.Spec.Containers[0].Command)
-	t.Fatal(job.String())
+	job := cli.buildJob("plan", false)
+	expected := []string{"/bin/terraform.sh", "plan", "AWSBackend"}
+	if len(job.Spec.Template.Spec.Containers[0].Command) != len(expected) {
+		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+	}
+	for i, s := range job.Spec.Template.Spec.Containers[0].Command {
+		if s != expected[i] {
+			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+		}
+	}
 }
 
 func TestExecute(t *testing.T) {
@@ -65,17 +47,98 @@ func TestExecute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(cli.tfvarsPath)
+	cli.clientset = clientset
 	err = cli.execute("plan", false)
 	job, err := clientset.BatchV1().Jobs(lb.Namespace).Get(lb.Spec.AWSBackend.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	expected := []string{"/bin/terraform.sh", "plan", "AWSBackend"}
-	if reflect.DeepEqual(job.Spec.Template.Spec.Containers[0].Command, expected) {
-		t.Fatal(job)
-
+	if len(job.Spec.Template.Spec.Containers[0].Command) != len(expected) {
+		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
 	}
+	for i, s := range job.Spec.Template.Spec.Containers[0].Command {
+		if s != expected[i] {
+			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+		}
+	}
+	secret, err := clientset.CoreV1().Secrets(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := secret.Data["tfvars"]; !ok {
+		t.Fatal(secret)
+	}
+}
+
+func TestApply(t *testing.T) {
+	lb := lbMock()
+	cli, err := NewClient(lb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testEnv, clientset, err := clientsetMock()
+	defer testEnv.Stop()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cli.clientset = clientset
+	err = cli.Apply()
+	job, err := clientset.BatchV1().Jobs(lb.Namespace).Get(lb.Spec.AWSBackend.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected := []string{"/bin/terraform.sh", "apply", "AWSBackend", "force"}
+	if len(job.Spec.Template.Spec.Containers[0].Command) != len(expected) {
+		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+	}
+	for i, s := range job.Spec.Template.Spec.Containers[0].Command {
+		if s != expected[i] {
+			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+		}
+	}
+	secret, err := clientset.CoreV1().Secrets(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := secret.Data["tfvars"]; !ok {
+		t.Fatal(secret)
+	}
+}
+
+func TestCreateSecret(t *testing.T) {
+	lb := lbMock()
+	cli, err := NewClient(lb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testEnv, clientset, err := clientsetMock()
+	defer testEnv.Stop()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cli.clientset = clientset
+
+	err = cli.createTfVarsSecret()
+	if err != nil {
+		t.Fatal(err)
+	}
+	secret, err := clientset.CoreV1().Secrets(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := secret.Data["tfvars"]; !ok {
+		t.Fatal(secret)
+	}
+}
+func TestGenTfvars(t *testing.T) {
+	lb := lbMock()
+	cli, err := NewClient(lb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected, err := cli.genTfvars()
+	t.Fatal(expected)
 }
 
 func awsBackendMock() v1beta1.AWSBackend {

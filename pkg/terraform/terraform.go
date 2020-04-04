@@ -1,50 +1,55 @@
 package terraform
 
 import (
-	"fmt"
-	"io"
+	"bytes"
 	"os"
-	"os/exec"
 	"text/template"
 
-	"github.com/google/uuid"
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 var BASE_DIR string = os.Getenv("PROJECT_ROOT")
 
 type TerraformClient struct {
+	clientset      *kubernetes.Clientset
 	awsBackend     *v1beta1.AWSBackend
 	tfvarsPath     string
 	tfstateBackend string
 }
 
-func (t TerraformClient) init() error {
-	prev, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-	if err = os.Chdir(t.workDir()); err != nil {
-		return err
-	}
-	defer os.Chdir(prev)
-	init := exec.Command("terraform", "init")
-	init.Env = os.Environ()
-	err = init.Run()
-	if err != nil {
-		return err
-	}
-	return nil
-}
 func (t TerraformClient) createTfVarsSecret() error {
-	return nil
+	sc := t.clientset.CoreV1().Secrets(t.awsBackend.Namespace)
+	tfvars, err := t.genTfvars()
+	if err != nil {
+		return err
+	}
+	sd := map[string]string{"tfvars": tfvars}
+	secret, err := sc.Get(t.awsBackend.Name, metav1.GetOptions{})
+	if err != nil && apierrors.IsNotFound(err) {
+		newSecret := corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      t.awsBackend.Name,
+				Namespace: t.awsBackend.Namespace,
+			},
+			StringData: sd}
+		_, err = sc.Create(&newSecret)
+	} else if err == nil {
+		secret.StringData = sd
+		_, err = sc.Update(secret)
+	}
+	return err
 }
 func (t TerraformClient) createJob(ops string, force bool) error {
-	_ = t.buildJob(ops, force)
-	return nil
+	job := t.buildJob(ops, force)
+	_, err := t.clientset.BatchV1().Jobs(t.awsBackend.Namespace).Create(&job)
+	return err
 }
 
 func (t TerraformClient) execute(ops string, force bool) error {
@@ -67,18 +72,15 @@ func (t TerraformClient) Destroy() error {
 	return t.execute("destroy", true)
 }
 
-func genTfVarsPath() string {
-	return fmt.Sprintf("/tmp/%s.tfvars", uuid.New().String())
-}
-
-func (t TerraformClient) genTfvars(w io.Writer) error {
+func (t TerraformClient) genTfvars() (string, error) {
 	awsBackend := t.awsBackend
 	if awsBackend != nil {
 		tmpl, err := template.ParseFiles(t.workDir() + "/template.tfvars.tpl")
 		if err != nil {
-			return err
+			return "", err
 		}
-		err = tmpl.Execute(w, struct {
+		tfvars := bytes.Buffer{}
+		err = tmpl.Execute(&tfvars, struct {
 			B         *v1beta1.AWSBackend
 			ServiceIn bool
 		}{
@@ -86,49 +88,31 @@ func (t TerraformClient) genTfvars(w io.Writer) error {
 			ServiceIn: false,
 		})
 		if err != nil {
-			return err
+			return "", err
 		}
-		return nil
+		return tfvars.String(), nil
 	}
-	return nil
+	return "", nil
 }
 
 func NewClientForAWSBackend(awsBackend v1beta1.AWSBackend) (TerraformClient, error) {
-	tc := TerraformClient{}
-	tfvarsPath := genTfVarsPath()
-	f, err := os.Create(tfvarsPath)
-	if err != nil {
-		return tc, err
-	}
-	defer f.Close()
-	tc.awsBackend = &awsBackend
-	err = tc.genTfvars(f)
-	if err != nil {
-		return TerraformClient{}, err
-	}
-	tc.tfvarsPath = tfvarsPath
-	return tc, nil
+	return NewClient(v1beta1.Loadbalancer{Spec: v1beta1.LoadbalancerSpec{AWSBackend: awsBackend}})
 }
 func NewClient(lb v1beta1.Loadbalancer) (TerraformClient, error) {
 	tc := TerraformClient{}
-	tfvarsPath := genTfVarsPath()
-	f, err := os.Create(tfvarsPath)
+	config := ctrl.GetConfigOrDie()
+	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return tc, err
 	}
-	defer f.Close()
+	tc.clientset = clientset
 	tc.awsBackend = &lb.Spec.AWSBackend
-	err = tc.genTfvars(f)
-	if err != nil {
-		return TerraformClient{}, err
-	}
-	tc.tfvarsPath = tfvarsPath
 	return tc, nil
 }
 
 func (t TerraformClient) workDir() string {
 	if t.awsBackend != nil {
-		return BASE_DIR + "/src/terraform/aws_backend"
+		return BASE_DIR + "/src/terraform/AWSBackend"
 	}
 	return ""
 }

@@ -9,5 +9,6 @@ if [[ "$FORCE" = "true" ]]; then
   OPTS="-auto-approve $OPTS"
 fi
 
-cd /app/src/terraform/$BACKEND
+cd /app/$BACKEND
+terraform init
 terraform $OPERATION $OPTS
