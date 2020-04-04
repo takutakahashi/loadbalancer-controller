@@ -24,13 +24,17 @@ type TerraformClient struct {
 	tfstateBackend string
 }
 
-func (t TerraformClient) createTfVars() error {
+func (t TerraformClient) createConfig() error {
 	sc := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace)
 	tfvars, err := t.genTfvars()
 	if err != nil {
 		return err
 	}
-	sd := map[string]string{"tfvars": tfvars}
+	backendTf, err := t.genBackendTf()
+	if err != nil {
+		return err
+	}
+	sd := map[string]string{"tfvars": tfvars, "backend.tf": backendTf}
 	configmap, err := sc.Get(t.awsBackend.Name, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
 		newConfigMap := corev1.ConfigMap{
@@ -53,7 +57,7 @@ func (t TerraformClient) createJob(ops string, force bool) error {
 }
 
 func (t TerraformClient) execute(ops string, force bool) error {
-	err := t.createTfVars()
+	err := t.createConfig()
 	if err != nil {
 		return err
 	}
@@ -72,15 +76,23 @@ func (t TerraformClient) Destroy() error {
 	return t.execute("destroy", true)
 }
 
+func (t TerraformClient) genBackendTf() (string, error) {
+	return t.genWithTpl(t.workDir() + "/backend.tf.tpl")
+}
+
 func (t TerraformClient) genTfvars() (string, error) {
+	return t.genWithTpl(t.workDir() + "/template.tfvars.tpl")
+}
+
+func (t TerraformClient) genWithTpl(path string) (string, error) {
 	awsBackend := t.awsBackend
 	if awsBackend != nil {
-		tmpl, err := template.ParseFiles(t.workDir() + "/template.tfvars.tpl")
+		tmpl, err := template.ParseFiles(path)
 		if err != nil {
 			return "", err
 		}
-		tfvars := bytes.Buffer{}
-		err = tmpl.Execute(&tfvars, struct {
+		result := bytes.Buffer{}
+		err = tmpl.Execute(&result, struct {
 			B         *v1beta1.AWSBackend
 			ServiceIn bool
 		}{
@@ -90,7 +102,7 @@ func (t TerraformClient) genTfvars() (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return tfvars.String(), nil
+		return result.String(), nil
 	}
 	return "", nil
 }

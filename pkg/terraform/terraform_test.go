@@ -69,6 +69,9 @@ func TestExecute(t *testing.T) {
 	if _, ok := cm.Data["tfvars"]; !ok {
 		t.Fatal(cm)
 	}
+	if _, ok := cm.Data["backend.tf"]; !ok {
+		t.Fatal(cm)
+	}
 }
 
 func TestApply(t *testing.T) {
@@ -106,13 +109,18 @@ func TestApply(t *testing.T) {
 	}
 }
 
-func TestGenTfvars(t *testing.T) {
+func TestGenTemplates(t *testing.T) {
 	lb := lbMock()
 	cli, err := NewClient(lb)
 	if err != nil {
 		t.Fatal(err)
 	}
 	expected, err := cli.genTfvars()
+	if err != nil {
+		t.Log(expected)
+		t.Fatal(err)
+	}
+	expected, err = cli.genBackendTf()
 	if err != nil {
 		t.Log(expected)
 		t.Fatal(err)
