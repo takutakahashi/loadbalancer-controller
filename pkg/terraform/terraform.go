@@ -2,8 +2,10 @@ package terraform
 
 import (
 	"bytes"
+	"errors"
 	"os"
 	"text/template"
+	"time"
 
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -65,7 +67,26 @@ func (t TerraformClient) execute(ops string, force bool) error {
 	if err != nil {
 		return err
 	}
-	return nil
+	return t.watchCompleteOrError()
+}
+
+func (t TerraformClient) watchCompleteOrError() error {
+	name := t.awsBackend.Name
+	namespace := t.awsBackend.Namespace
+	c := t.clientset.BatchV1().Jobs(namespace)
+	opt := metav1.GetOptions{}
+	for i := 0; i < 150; i++ {
+		job, err := c.Get(name, opt)
+		if err != nil {
+			return err
+		}
+		if job.Status.CompletionTime != nil {
+			return c.Delete(name, &metav1.DeleteOptions{})
+		}
+		time.Sleep(5 * time.Second)
+	}
+	c.Delete(name, &metav1.DeleteOptions{})
+	return errors.New("Job completion timeout")
 }
 
 func (t TerraformClient) Apply() error {
@@ -137,14 +158,16 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 	}
 	cmd := []string{"/bin/terraform.sh", ops, t.awsBackend.Kind}
 	if force {
-		cmd = append(cmd, "force")
+		cmd = append(cmd, "true")
 	}
+	backOffLimit := int32(0)
 	return batchv1.Job{
 		ObjectMeta: om,
 		Spec: batchv1.JobSpec{
+			BackoffLimit: &backOffLimit,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyOnFailure,
+					RestartPolicy: corev1.RestartPolicyNever,
 					Containers: []corev1.Container{
 						corev1.Container{
 							Name:    "tf",
