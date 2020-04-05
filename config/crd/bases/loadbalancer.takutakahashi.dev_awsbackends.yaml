@@ -284,6 +284,14 @@ spec:
           type: object
         status:
           description: AWSBackendStatus defines the observed state of AWSBackend
+          properties:
+            phase:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "make" to regenerate code after modifying
+                this file'
+              type: string
+          required:
+          - phase
           type: object
       type: object
   version: v1beta1

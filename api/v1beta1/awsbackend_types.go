@@ -108,7 +108,18 @@ type Identifier struct {
 type AWSBackendStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Phase AWSBackendPhase `json:"phase"`
 }
+
+type AWSBackendPhase string
+
+var (
+	AWSBackendPhaseProvisioning AWSBackendPhase = "Provisioning"
+	AWSBackendPhaseProvisioned  AWSBackendPhase = "Provisioned"
+	AWSBackendPhaseReady        AWSBackendPhase = "Ready"
+	AWSBackendPhaseDeleting     AWSBackendPhase = "Deleting"
+	AWSBackendPhaseDeleted      AWSBackendPhase = "Deleted"
+)
 
 // +kubebuilder:object:root=true
 
