@@ -3,6 +3,15 @@ kind: AWSBackend
 metadata:
   name: awsbackend-sample
 spec:
+  credentials:
+   accessKeyID:
+     secretKeyRef:
+       name: aws-credentials
+       key: aws_access_key_id
+   secretAccessKey:
+     secretKeyRef:
+       name: aws-credentials
+       key: aws_secret_access_key
   region: ap-northeast-1
   type: network
   vpc:
@@ -19,5 +28,6 @@ spec:
           protocol: TCP
           targetType: ip
           targets:
-            - destination: 10.0.0.11
+            - destination:
+                IP: 10.0.0.11
               port: 443

@@ -28,6 +28,10 @@ target_group_type = "{{ $tg.TargetType }}"
 target_port = {{ $tg.Port }}
 targets = [
 {{- range $i, $t := $tg.Targets }}
-  "{{ $t.Destination }}"
+{{- if eq $tg.TargetType "ip" }}
+  "{{ $t.Destination.IP }}"
+{{- else }}
+  "{{ $t.Destination.InstanceID }}"
+{{- end }}
 {{- end }}
 ]

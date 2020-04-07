@@ -26,6 +26,7 @@ import (
 
 	loadbalancerv1beta1 "github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	"github.com/takutakahashi/loadbalancer-controller/pkg/terraform"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 // AWSBackendReconciler reconciles a AWSBackend object
@@ -43,9 +44,49 @@ func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	_ = r.Log.WithValues("awsbackend", req.NamespacedName)
 	var backend loadbalancerv1beta1.AWSBackend
 	err := r.Get(ctx, req.NamespacedName, &backend)
-	if err != nil {
+	if apierrors.IsNotFound(err) {
+		return ctrl.Result{}, nil
+	} else if err != nil {
 		return ctrl.Result{}, err
 	}
+	if backend.Status.Phase == "" {
+		backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseProvisioning
+	}
+	if backend.ObjectMeta.Finalizers == nil || len(backend.ObjectMeta.Finalizers) == 0 {
+		backend.ObjectMeta.Finalizers = []string{"loadbalancer.takutakahashi.dev"}
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+	if backend.ObjectMeta.DeletionTimestamp != nil {
+		backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseDeleting
+	}
+	r.Update(ctx, &backend)
+	return r.reconcile(ctx, backend)
+}
+
+func (r *AWSBackendReconciler) reconcile(ctx context.Context, backend loadbalancerv1beta1.AWSBackend) (ctrl.Result, error) {
+	switch backend.Status.Phase {
+	case loadbalancerv1beta1.AWSBackendPhaseProvisioning:
+		return r.ReconcileApply(ctx, backend)
+	case loadbalancerv1beta1.AWSBackendPhaseProvisioned:
+		return r.ReconcileVerify(ctx, backend)
+	case loadbalancerv1beta1.AWSBackendPhaseDeleting:
+		return r.ReconcileDelete(ctx, backend)
+	case loadbalancerv1beta1.AWSBackendPhaseDeleted:
+		return ctrl.Result{}, r.Delete(ctx, &backend)
+	default:
+		return ctrl.Result{}, nil
+	}
+}
+func (r *AWSBackendReconciler) ReconcileVerify(ctx context.Context, backend loadbalancerv1beta1.AWSBackend) (ctrl.Result, error) {
+	r.Log.Info("Verify")
+	backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseReady
+	return ctrl.Result{}, r.Update(ctx, &backend)
+}
+
+func (r *AWSBackendReconciler) ReconcileApply(ctx context.Context, backend loadbalancerv1beta1.AWSBackend) (ctrl.Result, error) {
+	r.Log.Info("Apply")
 	tc, err := terraform.NewClientForAWSBackend(backend)
 	if err != nil {
 		return ctrl.Result{}, err
@@ -54,7 +95,23 @@ func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{}, nil
+	backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseProvisioned
+	return ctrl.Result{}, r.Update(ctx, &backend)
+
+}
+func (r *AWSBackendReconciler) ReconcileDelete(ctx context.Context, backend loadbalancerv1beta1.AWSBackend) (ctrl.Result, error) {
+	r.Log.Info("Delete")
+	tc, err := terraform.NewClientForAWSBackend(backend)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	err = tc.Destroy()
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	backend.Finalizers = []string{}
+	backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseDeleted
+	return ctrl.Result{}, r.Update(ctx, &backend)
 }
 
 func (r *AWSBackendReconciler) SetupWithManager(mgr ctrl.Manager) error {
