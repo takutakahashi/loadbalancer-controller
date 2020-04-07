@@ -28,8 +28,8 @@ type LoadbalancerSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Loadbalancer. Edit Loadbalancer_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	IP         string     `json:"ip"`
+	AWSBackend AWSBackend `json:"aws,omitempty"`
 }
 
 // LoadbalancerStatus defines the observed state of Loadbalancer
