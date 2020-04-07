@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -121,6 +122,14 @@ type AWSBackendList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []AWSBackend `json:"items"`
+}
+
+func (a AWSBackend) Yaml() string {
+	d, err := yaml.Marshal(&a)
+	if err != nil {
+		return ""
+	}
+	return string(d)
 }
 
 func init() {
