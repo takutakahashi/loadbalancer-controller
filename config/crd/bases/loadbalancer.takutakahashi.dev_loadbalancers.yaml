@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.2.5
+    controller-gen.kubebuilder.io/version: v0.2.2
   creationTimestamp: null
   name: loadbalancers.loadbalancer.takutakahashi.dev
 spec:
@@ -14,7 +14,7 @@ spec:
     listKind: LoadbalancerList
     plural: loadbalancers
     singular: loadbalancer
-  scope: Namespaced
+  scope: ""
   validation:
     openAPIV3Schema:
       description: Loadbalancer is the Schema for the loadbalancers API
@@ -106,13 +106,9 @@ spec:
                                     optional for env vars'
                                   type: string
                                 divisor:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
                                   description: Specifies the output format of the
                                     exposed resources, defaults to "1"
-                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                                  x-kubernetes-int-or-string: true
+                                  type: string
                                 resource:
                                   description: 'Required: resource to select'
                                   type: string
@@ -190,13 +186,9 @@ spec:
                                     optional for env vars'
                                   type: string
                                 divisor:
-                                  anyOf:
-                                  - type: integer
-                                  - type: string
                                   description: Specifies the output format of the
                                     exposed resources, defaults to "1"
-                                  pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                                  x-kubernetes-int-or-string: true
+                                  type: string
                                 resource:
                                   description: 'Required: resource to select'
                                   type: string
