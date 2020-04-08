@@ -1,6 +1,4 @@
-{{- $l := index .B.Spec.Listeners 0 }}
 {{ $name := .Name }}
-{{- $tg := $l.DefaultAction.TargetGroup }}
 region = "{{ .B.Spec.Region }}"
 vpc_id = "{{ .B.Spec.VPC.ID }}"
 
@@ -18,16 +16,26 @@ lb_tags ={
     {{ $k }} = "{{ $v }}"
 {{- end }}
 }
-listener_port = {{ $l.Port }}
-listener_protocol = "{{ $l.Protocol }}"
-listener_action_type = "{{ $l.DefaultAction.Type }}"
 
-target_group_port = {{ $tg.Port }}
-target_group_protocol = "{{ $tg.Protocol }}"
-target_group_type = "{{ $tg.TargetType }}"
 
-target_port = {{ $tg.Targets[0].Port }}
-targets = [
+{{- range $i, $l := .B.Spec.Listeners }}
+{{- $name := printf "%s_%d" $l.Protocol $l.Port }}
+{{- $tg := $l.DefaultAction.TargetGroup }}
+
+{{ $name }}_listener = {
+  port = {{ $l.Port }}
+  protocol = "{{ $l.Protocol }}"
+  action_type = "{{ $l.DefaultAction.Type }}"
+}
+
+{{ $name }}_target_group = {
+  port = {{ $tg.Port }}
+  protocol = "{{ $tg.Protocol }}"
+  type = "{{ $tg.TargetType }}"
+
+}
+
+{{$name}}_targets = [
 {{- range $i, $t := $tg.Targets }}
   {
 {{- if eq $tg.TargetType "ip" }}
@@ -39,3 +47,4 @@ targets = [
   },
 {{- end }}
 ]
+{{- end }}

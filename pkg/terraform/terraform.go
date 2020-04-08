@@ -26,17 +26,38 @@ type TerraformClient struct {
 	tfstateBackend string
 }
 
-func (t TerraformClient) createConfig() error {
-	sc := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace)
+func (t TerraformClient) genTerraformFiles() (map[string]string, error) {
+
 	tfvars, err := t.genTfvars()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	backendTf, err := t.genBackendTf()
 	if err != nil {
+		return nil, err
+	}
+	lbtf, err := t.genWithTpl(t.workDir() + "/lb.tf.tpl")
+	if err != nil {
+		return nil, err
+	}
+	vartf, err := t.genWithTpl(t.workDir() + "/var.tf.tpl")
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{
+		"tfvars":     tfvars,
+		"backend.tf": backendTf,
+		"lb.tf":      lbtf,
+		"var.tf":     vartf,
+	}, nil
+}
+
+func (t TerraformClient) createConfig() error {
+	sc := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace)
+	sd, err := t.genTerraformFiles()
+	if err != nil {
 		return err
 	}
-	sd := map[string]string{"tfvars": tfvars, "backend.tf": backendTf}
 	configmap, err := sc.Get(t.awsBackend.Name, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
 		newConfigMap := corev1.ConfigMap{
