@@ -1,6 +1,6 @@
 terraform {
   backend "s3" {
-      bucket  = "takutakahashi-tfstate"
+      bucket  = "loadbalancer-controller-tfstate"
       key     = "{{ .B.Namespace }}/{{ .B.Name }}.tfstate"
       region  = "{{ .B.Spec.Region }}"
     }

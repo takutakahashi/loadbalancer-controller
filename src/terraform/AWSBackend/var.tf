@@ -22,5 +22,5 @@ variable target_group_type {}
 
 variable target_port {}
 variable targets {
-  type = list(string)
+  type = list(map(string))
 }
