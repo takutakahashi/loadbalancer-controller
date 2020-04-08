@@ -9,6 +9,10 @@ if [[ "$FORCE" = "true" ]]; then
   OPTS="-auto-approve $OPTS"
 fi
 
+if [[ "$OPERATION" = "show" ]]; then
+  OPTS=""
+fi
+
 cd /app/$BACKEND
 cp /data/* .
 terraform init

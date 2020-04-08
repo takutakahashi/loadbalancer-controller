@@ -206,11 +206,34 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					RestartPolicy: corev1.RestartPolicyNever,
-					Containers: []corev1.Container{
+					InitContainers: []corev1.Container{
 						corev1.Container{
 							Name:    "tf",
 							Image:   "takutakahashi/loadbalancer-controller-toolkit",
 							Command: cmd,
+							VolumeMounts: []corev1.VolumeMount{
+								corev1.VolumeMount{
+									Name:      t.awsBackend.Name,
+									MountPath: "/data",
+								},
+							},
+							Env: []corev1.EnvVar{
+								corev1.EnvVar{
+									Name:      "AWS_ACCESS_KEY_ID",
+									ValueFrom: t.awsBackend.Spec.Credentials.AccesskeyID,
+								},
+								corev1.EnvVar{
+									Name:      "AWS_SECRET_ACCESS_KEY",
+									ValueFrom: t.awsBackend.Spec.Credentials.SecretAccesskey,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						corev1.Container{
+							Name:    "show",
+							Image:   "takutakahashi/loadbalancer-controller-toolkit",
+							Command: []string{"/bin/terraform.sh", "show", t.awsBackend.Kind},
 							VolumeMounts: []corev1.VolumeMount{
 								corev1.VolumeMount{
 									Name:      t.awsBackend.Name,
