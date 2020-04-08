@@ -93,7 +93,7 @@ func (r *AWSBackendReconciler) ReconcileApply(ctx context.Context, backend loadb
 	}
 	err = tc.Apply()
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true}, err
 	}
 	backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseProvisioned
 	return ctrl.Result{}, r.Update(ctx, &backend)

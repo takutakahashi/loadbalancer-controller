@@ -109,6 +109,10 @@ func (t TerraformClient) watchCompleteOrError() error {
 		if job.Status.CompletionTime != nil {
 			return c.Delete(name, &metav1.DeleteOptions{})
 		}
+		if job.Status.Failed > 0 {
+			c.Delete(name, &metav1.DeleteOptions{})
+			return errors.New("Job errored")
+		}
 		time.Sleep(5 * time.Second)
 	}
 	c.Delete(name, &metav1.DeleteOptions{})
@@ -141,7 +145,7 @@ func (t TerraformClient) genWithTpl(path string) (string, error) {
 		result := bytes.Buffer{}
 		var length int
 		if len(awsBackend.Name) < 32 {
-			length = len(awsBackend.Name) - 1
+			length = len(awsBackend.Name)
 		} else {
 			length = 31
 		}
