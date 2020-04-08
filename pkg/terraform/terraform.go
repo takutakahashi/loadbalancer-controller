@@ -26,17 +26,38 @@ type TerraformClient struct {
 	tfstateBackend string
 }
 
-func (t TerraformClient) createConfig() error {
-	sc := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace)
+func (t TerraformClient) genTerraformFiles() (map[string]string, error) {
+
 	tfvars, err := t.genTfvars()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	backendTf, err := t.genBackendTf()
 	if err != nil {
+		return nil, err
+	}
+	lbtf, err := t.genWithTpl(t.workDir() + "/lb.tf.tpl")
+	if err != nil {
+		return nil, err
+	}
+	vartf, err := t.genWithTpl(t.workDir() + "/var.tf.tpl")
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{
+		"tfvars":     tfvars,
+		"backend.tf": backendTf,
+		"lb.tf":      lbtf,
+		"var.tf":     vartf,
+	}, nil
+}
+
+func (t TerraformClient) createConfig() error {
+	sc := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace)
+	sd, err := t.genTerraformFiles()
+	if err != nil {
 		return err
 	}
-	sd := map[string]string{"tfvars": tfvars, "backend.tf": backendTf}
 	configmap, err := sc.Get(t.awsBackend.Name, metav1.GetOptions{})
 	if err != nil && apierrors.IsNotFound(err) {
 		newConfigMap := corev1.ConfigMap{
@@ -88,6 +109,10 @@ func (t TerraformClient) watchCompleteOrError() error {
 		if job.Status.CompletionTime != nil {
 			return c.Delete(name, &metav1.DeleteOptions{})
 		}
+		if job.Status.Failed > 0 {
+			c.Delete(name, &metav1.DeleteOptions{})
+			return errors.New("Job errored")
+		}
 		time.Sleep(5 * time.Second)
 	}
 	c.Delete(name, &metav1.DeleteOptions{})
@@ -120,7 +145,7 @@ func (t TerraformClient) genWithTpl(path string) (string, error) {
 		result := bytes.Buffer{}
 		var length int
 		if len(awsBackend.Name) < 32 {
-			length = len(awsBackend.Name) - 1
+			length = len(awsBackend.Name)
 		} else {
 			length = 31
 		}
@@ -181,11 +206,34 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
 					RestartPolicy: corev1.RestartPolicyNever,
-					Containers: []corev1.Container{
+					InitContainers: []corev1.Container{
 						corev1.Container{
 							Name:    "tf",
 							Image:   "takutakahashi/loadbalancer-controller-toolkit",
 							Command: cmd,
+							VolumeMounts: []corev1.VolumeMount{
+								corev1.VolumeMount{
+									Name:      t.awsBackend.Name,
+									MountPath: "/data",
+								},
+							},
+							Env: []corev1.EnvVar{
+								corev1.EnvVar{
+									Name:      "AWS_ACCESS_KEY_ID",
+									ValueFrom: t.awsBackend.Spec.Credentials.AccesskeyID,
+								},
+								corev1.EnvVar{
+									Name:      "AWS_SECRET_ACCESS_KEY",
+									ValueFrom: t.awsBackend.Spec.Credentials.SecretAccesskey,
+								},
+							},
+						},
+					},
+					Containers: []corev1.Container{
+						corev1.Container{
+							Name:    "show",
+							Image:   "takutakahashi/loadbalancer-controller-toolkit",
+							Command: []string{"/bin/terraform.sh", "show", t.awsBackend.Kind},
 							VolumeMounts: []corev1.VolumeMount{
 								corev1.VolumeMount{
 									Name:      t.awsBackend.Name,

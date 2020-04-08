@@ -50,7 +50,7 @@ func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		return ctrl.Result{}, err
 	}
 	if backend.Status.Phase == "" {
-		backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseProvisioning
+		backend.Status.Phase = loadbalancerv1beta1.BackendPhaseProvisioning
 	}
 	if backend.ObjectMeta.Finalizers == nil || len(backend.ObjectMeta.Finalizers) == 0 {
 		backend.ObjectMeta.Finalizers = []string{"loadbalancer.takutakahashi.dev"}
@@ -59,7 +59,7 @@ func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		}
 	}
 	if backend.ObjectMeta.DeletionTimestamp != nil {
-		backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseDeleting
+		backend.Status.Phase = loadbalancerv1beta1.BackendPhaseDeleting
 	}
 	r.Update(ctx, &backend)
 	return r.reconcile(ctx, backend)
@@ -67,13 +67,13 @@ func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 func (r *AWSBackendReconciler) reconcile(ctx context.Context, backend loadbalancerv1beta1.AWSBackend) (ctrl.Result, error) {
 	switch backend.Status.Phase {
-	case loadbalancerv1beta1.AWSBackendPhaseProvisioning:
+	case loadbalancerv1beta1.BackendPhaseProvisioning:
 		return r.ReconcileApply(ctx, backend)
-	case loadbalancerv1beta1.AWSBackendPhaseProvisioned:
+	case loadbalancerv1beta1.BackendPhaseProvisioned:
 		return r.ReconcileVerify(ctx, backend)
-	case loadbalancerv1beta1.AWSBackendPhaseDeleting:
+	case loadbalancerv1beta1.BackendPhaseDeleting:
 		return r.ReconcileDelete(ctx, backend)
-	case loadbalancerv1beta1.AWSBackendPhaseDeleted:
+	case loadbalancerv1beta1.BackendPhaseDeleted:
 		return ctrl.Result{}, r.Delete(ctx, &backend)
 	default:
 		return ctrl.Result{}, nil
@@ -81,7 +81,7 @@ func (r *AWSBackendReconciler) reconcile(ctx context.Context, backend loadbalanc
 }
 func (r *AWSBackendReconciler) ReconcileVerify(ctx context.Context, backend loadbalancerv1beta1.AWSBackend) (ctrl.Result, error) {
 	r.Log.Info("Verify")
-	backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseReady
+	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseReady
 	return ctrl.Result{}, r.Update(ctx, &backend)
 }
 
@@ -93,9 +93,9 @@ func (r *AWSBackendReconciler) ReconcileApply(ctx context.Context, backend loadb
 	}
 	err = tc.Apply()
 	if err != nil {
-		return ctrl.Result{}, err
+		return ctrl.Result{Requeue: true}, err
 	}
-	backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseProvisioned
+	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseProvisioned
 	return ctrl.Result{}, r.Update(ctx, &backend)
 
 }
@@ -110,7 +110,7 @@ func (r *AWSBackendReconciler) ReconcileDelete(ctx context.Context, backend load
 		return ctrl.Result{}, err
 	}
 	backend.Finalizers = []string{}
-	backend.Status.Phase = loadbalancerv1beta1.AWSBackendPhaseDeleted
+	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseDeleted
 	return ctrl.Result{}, r.Update(ctx, &backend)
 }
 

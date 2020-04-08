@@ -36,7 +36,27 @@ type LoadbalancerSpec struct {
 type LoadbalancerStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Backend BackendStatus `json:"backend"`
 }
+
+type BackendStatus struct {
+	Phase    BackendPhase    `json:"phase"`
+	Endpoint BackendEndpoint `json:"endpoint"`
+}
+
+type BackendEndpoint struct {
+	IP  string `json:"IP"`
+	DNS string `json:"DNS"`
+}
+type BackendPhase string
+
+var (
+	BackendPhaseProvisioning BackendPhase = "Provisioning"
+	BackendPhaseProvisioned  BackendPhase = "Provisioned"
+	BackendPhaseReady        BackendPhase = "Ready"
+	BackendPhaseDeleting     BackendPhase = "Deleting"
+	BackendPhaseDeleted      BackendPhase = "Deleted"
+)
 
 // +kubebuilder:object:root=true
 

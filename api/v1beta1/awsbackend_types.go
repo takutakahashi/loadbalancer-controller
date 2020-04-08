@@ -105,23 +105,6 @@ type Identifier struct {
 	ID   string `json:"id,omitempty"`
 }
 
-// AWSBackendStatus defines the observed state of AWSBackend
-type AWSBackendStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	Phase AWSBackendPhase `json:"phase"`
-}
-
-type AWSBackendPhase string
-
-var (
-	AWSBackendPhaseProvisioning AWSBackendPhase = "Provisioning"
-	AWSBackendPhaseProvisioned  AWSBackendPhase = "Provisioned"
-	AWSBackendPhaseReady        AWSBackendPhase = "Ready"
-	AWSBackendPhaseDeleting     AWSBackendPhase = "Deleting"
-	AWSBackendPhaseDeleted      AWSBackendPhase = "Deleted"
-)
-
 // +kubebuilder:object:root=true
 
 // AWSBackend is the Schema for the awsbackends API
@@ -129,8 +112,8 @@ type AWSBackend struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AWSBackendSpec   `json:"spec,omitempty"`
-	Status AWSBackendStatus `json:"status,omitempty"`
+	Spec   AWSBackendSpec `json:"spec,omitempty"`
+	Status BackendStatus  `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
