@@ -58,7 +58,7 @@ func (t TerraformClient) createJob(ops string, force bool) error {
 	return err
 }
 
-func (t TerraformClient) execute(ops string, force bool) error {
+func (t TerraformClient) execute(ops string, force bool, watch bool) error {
 	err := t.createConfig()
 	if err != nil {
 		return err
@@ -67,7 +67,12 @@ func (t TerraformClient) execute(ops string, force bool) error {
 	if err != nil {
 		return err
 	}
-	return t.watchCompleteOrError()
+	if !watch {
+		return nil
+	} else {
+
+		return t.watchCompleteOrError()
+	}
 }
 
 func (t TerraformClient) watchCompleteOrError() error {
@@ -90,11 +95,11 @@ func (t TerraformClient) watchCompleteOrError() error {
 }
 
 func (t TerraformClient) Apply() error {
-	return t.execute("apply", true)
+	return t.execute("apply", true, true)
 }
 
 func (t TerraformClient) Destroy() error {
-	return t.execute("destroy", true)
+	return t.execute("destroy", true, true)
 }
 
 func (t TerraformClient) genBackendTf() (string, error) {
@@ -113,10 +118,18 @@ func (t TerraformClient) genWithTpl(path string) (string, error) {
 			return "", err
 		}
 		result := bytes.Buffer{}
+		var length int
+		if len(awsBackend.Name) < 32 {
+			length = len(awsBackend.Name) - 1
+		} else {
+			length = 31
+		}
 		err = tmpl.Execute(&result, struct {
+			Name      string
 			B         *v1beta1.AWSBackend
 			ServiceIn bool
 		}{
+			Name:      string([]rune(awsBackend.Name[:length])),
 			B:         awsBackend,
 			ServiceIn: false,
 		})
