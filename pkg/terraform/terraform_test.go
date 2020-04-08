@@ -48,7 +48,7 @@ func TestExecute(t *testing.T) {
 		t.Fatal(err)
 	}
 	cli.clientset = clientset
-	err = cli.execute("plan", false)
+	err = cli.execute("plan", false, false)
 	job, err := clientset.BatchV1().Jobs(lb.Namespace).Get(lb.Spec.AWSBackend.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
