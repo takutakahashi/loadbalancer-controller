@@ -3,6 +3,7 @@ package terraform
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"text/template"
 	"time"
@@ -10,6 +11,7 @@ import (
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -96,6 +98,35 @@ func (t TerraformClient) execute(ops string, force bool, watch bool) error {
 	}
 }
 
+func (t TerraformClient) updateReport(job *batchv1.Job) error {
+	var podLogs io.ReadCloser
+	c := t.clientset.CoreV1().Pods(t.awsBackend.Namespace)
+	pods, err := c.List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, pod := range pods.Items {
+		if pod.Labels["controller-uid"] == job.Labels["controller-uid"] {
+			podLogs, err = c.GetLogs(pod.Name, &v1.PodLogOptions{Container: "show"}).Stream()
+			if err != nil {
+				return nil
+			}
+			break
+		}
+	}
+	defer podLogs.Close()
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(podLogs)
+	cmclient := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace)
+	cm, err := cmclient.Get(job.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	cm.Data["tf-report"] = buf.String()
+	_, err = cmclient.Update(cm)
+	return err
+}
+
 func (t TerraformClient) watchCompleteOrError() error {
 	name := t.awsBackend.Name
 	namespace := t.awsBackend.Namespace
@@ -107,8 +138,10 @@ func (t TerraformClient) watchCompleteOrError() error {
 			return err
 		}
 		if job.Status.CompletionTime != nil {
+			t.updateReport(job)
 			return c.Delete(name, &metav1.DeleteOptions{})
 		}
+
 		if job.Status.Failed > 0 {
 			c.Delete(name, &metav1.DeleteOptions{})
 			return errors.New("Job errored")
