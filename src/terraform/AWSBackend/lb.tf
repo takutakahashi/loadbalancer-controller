@@ -28,8 +28,9 @@ resource "aws_lb_target_group" "tg" {
 }
 
 resource "aws_lb_target_group_attachment" "tga" {
-  count            = length(var.targets)
-  target_group_arn = aws_lb_target_group.tg.arn
-  target_id        = element(var.targets, count.index)
-  port             = var.target_port
+  count             = length(var.targets)
+  target_group_arn  = aws_lb_target_group.tg.arn
+  target_id         = element(var.targets, count.index)
+  availability_zone = "ap-northeast-1a"
+  port              = var.target_port
 }
