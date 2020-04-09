@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"net"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -81,6 +82,21 @@ func (r *AWSBackendReconciler) reconcile(ctx context.Context, backend loadbalanc
 }
 func (r *AWSBackendReconciler) ReconcileVerify(ctx context.Context, backend loadbalancerv1beta1.AWSBackend) (ctrl.Result, error) {
 	r.Log.Info("Verify")
+	tc, err := terraform.NewClientForAWSBackend(backend)
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
+	endpoint, err := tc.GetEndpointStatus()
+	if err != nil {
+		return ctrl.Result{Requeue: true}, err
+	}
+	if endpoint.IP == "" {
+		addr, _ := net.ResolveIPAddr("ip", endpoint.DNS)
+		if addr != nil {
+			endpoint.IP = addr.String()
+		}
+	}
+	backend.Status.Endpoint = endpoint
 	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseReady
 	return ctrl.Result{}, r.Update(ctx, &backend)
 }

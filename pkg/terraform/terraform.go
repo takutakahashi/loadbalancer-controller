@@ -3,8 +3,10 @@ package terraform
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"text/template"
 	"time"
 
@@ -95,6 +97,26 @@ func (t TerraformClient) execute(ops string, force bool, watch bool) error {
 	} else {
 
 		return t.watchCompleteOrError()
+	}
+}
+
+func (t TerraformClient) getDNSRegex() string {
+	return fmt.Sprintf("%s.*.elb.*.amazonaws.com", t.awsBackend.Name)
+}
+
+func (t TerraformClient) GetEndpointStatus() (v1beta1.BackendEndpoint, error) {
+	cm, err := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace).Get(t.awsBackend.Name, metav1.GetOptions{})
+	if err != nil {
+		return v1beta1.BackendEndpoint{}, err
+	}
+	r := regexp.MustCompile(t.getDNSRegex())
+	matches := r.FindStringSubmatch(cm.Data["tf-report"])
+	if len(matches) > 0 {
+		return v1beta1.BackendEndpoint{
+			DNS: matches[0],
+		}, nil
+	} else {
+		return v1beta1.BackendEndpoint{}, errors.New("no dns record found in tf-report")
 	}
 }
 
