@@ -40,8 +40,14 @@ type LoadbalancerStatus struct {
 }
 
 type BackendStatus struct {
-	Phase    BackendPhase    `json:"phase"`
-	Endpoint BackendEndpoint `json:"endpoint"`
+	Phase     BackendPhase      `json:"phase"`
+	Endpoint  BackendEndpoint   `json:"endpoint"`
+	Listeners []BackendListener `json:"listeners"`
+}
+
+type BackendListener struct {
+	Protocol BackendProtocol
+	Port     int
 }
 
 type BackendEndpoint struct {
@@ -50,6 +56,12 @@ type BackendEndpoint struct {
 }
 type BackendPhase string
 
+type BackendProtocol string
+
+var (
+	BackendProtocolTCP BackendProtocol = "TCP"
+	BackendProtocolUDP BackendProtocol = "UDP"
+)
 var (
 	BackendPhaseProvisioning BackendPhase = "Provisioning"
 	BackendPhaseProvisioned  BackendPhase = "Provisioned"

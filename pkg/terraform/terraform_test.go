@@ -152,12 +152,12 @@ func awsBackendMock() v1beta1.AWSBackend {
 			Listeners: []v1beta1.Listener{
 				v1beta1.Listener{
 					Port:     8080,
-					Protocol: v1beta1.AWSBackendProtocolTCP,
+					Protocol: v1beta1.BackendProtocolTCP,
 					DefaultAction: v1beta1.AWSBackendAction{
 						Type: v1beta1.ActionTypeForward,
 						TargetGroup: v1beta1.AWSBackendTargetGroup{
 							Port:       8080,
-							Protocol:   v1beta1.AWSBackendProtocolTCP,
+							Protocol:   v1beta1.BackendProtocolTCP,
 							TargetType: v1beta1.TargetTypeIP,
 							Targets: []v1beta1.AWSBackendTarget{
 								v1beta1.AWSBackendTarget{
