@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"net"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,17 +85,11 @@ func (r *AWSBackendReconciler) ReconcileVerify(ctx context.Context, backend load
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	endpoint, err := tc.GetEndpointStatus()
+	status, err := tc.GetStatus()
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
 	}
-	if endpoint.IP == "" {
-		addr, _ := net.ResolveIPAddr("ip", endpoint.DNS)
-		if addr != nil {
-			endpoint.IP = addr.String()
-		}
-	}
-	backend.Status.Endpoint = endpoint
+	backend.Status = status
 	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseReady
 	return ctrl.Result{}, r.Update(ctx, &backend)
 }

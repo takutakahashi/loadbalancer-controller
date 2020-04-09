@@ -286,10 +286,23 @@ spec:
               - DNS
               - IP
               type: object
+            listeners:
+              items:
+                properties:
+                  port:
+                    type: integer
+                  protocol:
+                    type: string
+                required:
+                - port
+                - protocol
+                type: object
+              type: array
             phase:
               type: string
           required:
           - endpoint
+          - listeners
           - phase
           type: object
       type: object

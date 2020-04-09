@@ -46,9 +46,9 @@ type AWSBackendCredentials struct {
 }
 
 type Listener struct {
-	Port          int                `json:"port"`
-	Protocol      AWSBackendProtocol `json:"protocol"`
-	DefaultAction AWSBackendAction   `json:"defaultAction"`
+	Port          int              `json:"port"`
+	Protocol      BackendProtocol  `json:"protocol"`
+	DefaultAction AWSBackendAction `json:"defaultAction"`
 }
 
 type AWSBackendAction struct {
@@ -58,7 +58,7 @@ type AWSBackendAction struct {
 
 type AWSBackendTargetGroup struct {
 	Port       int                  `json:"port"`
-	Protocol   AWSBackendProtocol   `json:"protocol"`
+	Protocol   BackendProtocol      `json:"protocol"`
 	TargetType AWSBackendTargetType `json:"targetType"`
 	Targets    []AWSBackendTarget   `json:"targets"`
 }
@@ -84,13 +84,6 @@ type AWSBackendTargetType string
 var (
 	TargetTypeIP       AWSBackendTargetType = "ip"
 	TargetTypeInstance AWSBackendTargetType = "instance"
-)
-
-type AWSBackendProtocol string
-
-var (
-	AWSBackendProtocolTCP AWSBackendProtocol = "TCP"
-	AWSBackendProtocolUDP AWSBackendProtocol = "UDP"
 )
 
 type AWSBackendType string

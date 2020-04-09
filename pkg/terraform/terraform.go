@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"regexp"
 	"text/template"
@@ -98,6 +99,32 @@ func (t TerraformClient) execute(ops string, force bool, watch bool) error {
 
 		return t.watchCompleteOrError()
 	}
+}
+
+func (t TerraformClient) GetStatus() (v1beta1.BackendStatus, error) {
+	endpoint, err := t.GetEndpointStatus()
+	if err != nil {
+		return *t.awsBackend.Status.DeepCopy(), err
+	}
+	if endpoint.IP == "" {
+		addr, _ := net.ResolveIPAddr("ip", endpoint.DNS)
+		if addr != nil {
+			endpoint.IP = addr.String()
+		}
+	}
+	var listeners []v1beta1.BackendListener
+	for _, l := range t.awsBackend.Spec.Listeners {
+		bl := v1beta1.BackendListener{
+			Protocol: l.Protocol,
+			Port:     l.Port,
+		}
+		listeners = append(listeners, bl)
+	}
+
+	status := t.awsBackend.Status.DeepCopy()
+	status.Endpoint = endpoint
+	status.Listeners = listeners
+	return *status, nil
 }
 
 func (t TerraformClient) getDNSRegex() string {
