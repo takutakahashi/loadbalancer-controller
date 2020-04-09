@@ -46,8 +46,8 @@ type BackendStatus struct {
 }
 
 type BackendListener struct {
-	Protocol BackendProtocol
-	Port     int
+	Protocol BackendProtocol `json:"protocol"`
+	Port     int             `json:"port"`
 }
 
 type BackendEndpoint struct {
