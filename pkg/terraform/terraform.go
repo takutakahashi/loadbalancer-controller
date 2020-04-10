@@ -96,9 +96,32 @@ func (t TerraformClient) execute(ops string, force bool, watch bool) error {
 	if !watch {
 		return nil
 	} else {
+		err = t.watchCompleteOrError()
+		if err != nil {
+			return err
+		}
 
-		return t.watchCompleteOrError()
+		return t.cleanup()
 	}
+}
+
+func (t TerraformClient) cleanup() error {
+	jc := t.clientset.BatchV1().Jobs(t.awsBackend.Namespace)
+	job, err := jc.Get(t.awsBackend.Name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	pc := t.clientset.CoreV1().Pods(t.awsBackend.Namespace)
+	pods, err := pc.List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	for _, pod := range pods.Items {
+		if pod.Labels["controller-uid"] == job.Labels["controller-uid"] {
+			return pc.Delete(pod.Name, &metav1.DeleteOptions{})
+		}
+	}
+	return errors.New("failed to cleanup")
 }
 
 func (t TerraformClient) GetStatus() (v1beta1.BackendStatus, error) {
