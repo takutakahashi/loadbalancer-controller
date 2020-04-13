@@ -90,9 +90,11 @@ func (r *AWSBackendReconciler) ReconcileVerify(ctx context.Context, backend load
 		return ctrl.Result{Requeue: true}, err
 	}
 	backend.Status = status
-	reached, err := backend.ReachableAll()
-	if err != nil || !reached {
-		return ctrl.Result{Requeue: true}, err
+	if backend.Status.Internal != true {
+		reached, err := backend.ReachableAll()
+		if err != nil || !reached {
+			return ctrl.Result{Requeue: true}, err
+		}
 	}
 	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseReady
 	return ctrl.Result{}, r.Update(ctx, &backend)
