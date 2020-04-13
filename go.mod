@@ -15,6 +15,7 @@ require (
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/pborman/uuid v1.2.0
+	github.com/sirupsen/logrus v1.4.2
 	gopkg.in/yaml.v1 v1.0.0-20140924161607-9f9df34309c0
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.2

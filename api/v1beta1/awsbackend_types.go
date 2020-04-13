@@ -17,6 +17,13 @@ limitations under the License.
 package v1beta1
 
 import (
+	"errors"
+	"fmt"
+	"net"
+	"strings"
+	"time"
+
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -124,6 +131,43 @@ func (a AWSBackend) Yaml() string {
 		return ""
 	}
 	return string(d)
+}
+
+func (a AWSBackend) ReachableAll() (bool, error) {
+	endpoint := a.Status.Endpoint
+	if endpoint.DNS == "" && endpoint.IP == "" {
+		return false, errors.New("empty endpoint")
+	}
+	reachedList := []BackendListener{}
+	for _, listener := range a.Status.Listeners {
+		for i := 0; i < 300; i++ {
+			reached, _ := a.reachable(listener)
+			if reached {
+				reachedList = append(reachedList, listener)
+				break
+			}
+			time.Sleep(1 * time.Second)
+		}
+	}
+	if len(reachedList) != len(a.Status.Listeners) {
+		return false, errors.New("some listener is not reachable")
+	}
+	return true, nil
+}
+
+func (a AWSBackend) reachable(listener BackendListener) (bool, error) {
+	e := a.Status.Endpoint.DNS
+	if e == "" {
+		e = a.Status.Endpoint.IP
+	}
+	conn, err := net.Dial(strings.ToLower(listener.Protocol.String()), fmt.Sprintf("%s:%d", e, listener.Port))
+	if err != nil {
+		logrus.Debug(err)
+		return false, err
+	}
+	defer conn.Close()
+	return true, nil
+
 }
 
 func init() {
