@@ -58,6 +58,17 @@ type BackendPhase string
 
 type BackendProtocol string
 
+func (b BackendProtocol) String() string {
+	switch b {
+	case BackendProtocolTCP:
+		return "TCP"
+	case BackendProtocolUDP:
+		return "UDP"
+	default:
+		return ""
+	}
+}
+
 var (
 	BackendProtocolTCP BackendProtocol = "TCP"
 	BackendProtocolUDP BackendProtocol = "UDP"
