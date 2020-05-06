@@ -89,6 +89,7 @@ func (t TerraformClient) execute(ops string, force bool, watch bool) error {
 	if err != nil {
 		return err
 	}
+	t.watchCompleteOrError()
 	err = t.createJob(ops, force)
 	if err != nil {
 		return err
