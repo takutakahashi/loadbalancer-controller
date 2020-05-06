@@ -286,6 +286,8 @@ spec:
               - DNS
               - IP
               type: object
+            internal:
+              type: boolean
             listeners:
               items:
                 properties:
@@ -302,6 +304,7 @@ spec:
               type: string
           required:
           - endpoint
+          - internal
           - listeners
           - phase
           type: object

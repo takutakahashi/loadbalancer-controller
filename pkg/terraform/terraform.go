@@ -147,6 +147,7 @@ func (t TerraformClient) GetStatus() (v1beta1.BackendStatus, error) {
 	status := t.awsBackend.Status.DeepCopy()
 	status.Endpoint = endpoint
 	status.Listeners = listeners
+	status.Internal = t.awsBackend.Spec.Internal
 	return *status, nil
 }
 
