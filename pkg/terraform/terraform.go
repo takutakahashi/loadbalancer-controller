@@ -162,18 +162,18 @@ func (t TerraformClient) GetEndpointStatus() (v1beta1.BackendEndpoint, error) {
 		return v1beta1.BackendEndpoint{}, err
 	}
 	r := regexp.MustCompile(t.getDNSRegex())
-	matches := r.FindStringSubmatch(cm.Data["tf-report"])
+	matches := r.FindStringSubmatch(cm.Data["show"])
 	if len(matches) > 0 {
 		return v1beta1.BackendEndpoint{
 			DNS: matches[0],
 		}, nil
 	} else {
-		return v1beta1.BackendEndpoint{}, errors.New("no dns record found in tf-report")
+		return v1beta1.BackendEndpoint{}, errors.New("no dns record found in show")
 	}
 }
 
 func (t TerraformClient) updateReport(job *batchv1.Job) error {
-	var podLogs io.ReadCloser
+	logs := map[string]io.ReadCloser{}
 	c := t.clientset.CoreV1().Pods(t.awsBackend.Namespace)
 	pods, err := c.List(metav1.ListOptions{})
 	if err != nil {
@@ -181,22 +181,28 @@ func (t TerraformClient) updateReport(job *batchv1.Job) error {
 	}
 	for _, pod := range pods.Items {
 		if pod.Labels["controller-uid"] == job.Labels["controller-uid"] {
-			podLogs, err = c.GetLogs(pod.Name, &v1.PodLogOptions{Container: "show"}).Stream()
+			logs["show"], err = c.GetLogs(pod.Name, &v1.PodLogOptions{Container: "show"}).Stream()
+			if err != nil {
+				return nil
+			}
+			logs["plan"], err = c.GetLogs(pod.Name, &v1.PodLogOptions{Container: "plan"}).Stream()
 			if err != nil {
 				return nil
 			}
 			break
 		}
 	}
-	defer podLogs.Close()
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(podLogs)
 	cmclient := t.clientset.CoreV1().ConfigMaps(t.awsBackend.Namespace)
 	cm, err := cmclient.Get(job.Name, metav1.GetOptions{})
 	if err != nil {
 		return err
 	}
-	cm.Data["tf-report"] = buf.String()
+	for k, v := range logs {
+		defer v.Close()
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(v)
+		cm.Data[k] = buf.String()
+	}
 	_, err = cmclient.Update(cm)
 	return err
 }
@@ -306,61 +312,59 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 		cmd = append(cmd, "true")
 	}
 	backOffLimit := int32(0)
+	terminationGracePeriodSeconds := int64(300)
+	vm := []corev1.VolumeMount{
+		{
+			Name:      t.awsBackend.Name,
+			MountPath: "/data",
+		},
+	}
+	env := []corev1.EnvVar{
+
+		{
+			Name:      "AWS_ACCESS_KEY_ID",
+			ValueFrom: t.awsBackend.Spec.Credentials.AccesskeyID,
+		},
+		{
+			Name:      "AWS_SECRET_ACCESS_KEY",
+			ValueFrom: t.awsBackend.Spec.Credentials.SecretAccesskey,
+		},
+	}
 	return batchv1.Job{
 		ObjectMeta: om,
 		Spec: batchv1.JobSpec{
 			BackoffLimit: &backOffLimit,
 			Template: corev1.PodTemplateSpec{
 				Spec: corev1.PodSpec{
-					RestartPolicy: corev1.RestartPolicyNever,
+					RestartPolicy:                 corev1.RestartPolicyNever,
+					TerminationGracePeriodSeconds: &terminationGracePeriodSeconds,
 					InitContainers: []corev1.Container{
-						corev1.Container{
-							Name:    "tf",
-							Image:   "takutakahashi/loadbalancer-controller-toolkit",
-							Command: cmd,
-							VolumeMounts: []corev1.VolumeMount{
-								corev1.VolumeMount{
-									Name:      t.awsBackend.Name,
-									MountPath: "/data",
-								},
-							},
-							Env: []corev1.EnvVar{
-								corev1.EnvVar{
-									Name:      "AWS_ACCESS_KEY_ID",
-									ValueFrom: t.awsBackend.Spec.Credentials.AccesskeyID,
-								},
-								corev1.EnvVar{
-									Name:      "AWS_SECRET_ACCESS_KEY",
-									ValueFrom: t.awsBackend.Spec.Credentials.SecretAccesskey,
-								},
-							},
+						{
+							Name:         "plan",
+							Image:        "takutakahashi/loadbalancer-controller-toolkit",
+							Command:      []string{"/bin/terraform.sh", "plan", t.awsBackend.Kind},
+							VolumeMounts: vm,
+							Env:          env,
+						},
+						{
+							Name:         "tf",
+							Image:        "takutakahashi/loadbalancer-controller-toolkit",
+							Command:      cmd,
+							VolumeMounts: vm,
+							Env:          env,
 						},
 					},
 					Containers: []corev1.Container{
-						corev1.Container{
-							Name:    "show",
-							Image:   "takutakahashi/loadbalancer-controller-toolkit",
-							Command: []string{"/bin/terraform.sh", "show", t.awsBackend.Kind},
-							VolumeMounts: []corev1.VolumeMount{
-								corev1.VolumeMount{
-									Name:      t.awsBackend.Name,
-									MountPath: "/data",
-								},
-							},
-							Env: []corev1.EnvVar{
-								corev1.EnvVar{
-									Name:      "AWS_ACCESS_KEY_ID",
-									ValueFrom: t.awsBackend.Spec.Credentials.AccesskeyID,
-								},
-								corev1.EnvVar{
-									Name:      "AWS_SECRET_ACCESS_KEY",
-									ValueFrom: t.awsBackend.Spec.Credentials.SecretAccesskey,
-								},
-							},
+						{
+							Name:         "show",
+							Image:        "takutakahashi/loadbalancer-controller-toolkit",
+							Command:      []string{"/bin/terraform.sh", "show", t.awsBackend.Kind},
+							VolumeMounts: vm,
+							Env:          env,
 						},
 					},
 					Volumes: []corev1.Volume{
-						corev1.Volume{
+						{
 							Name: t.awsBackend.Name,
 							VolumeSource: corev1.VolumeSource{
 								ConfigMap: &corev1.ConfigMapVolumeSource{
