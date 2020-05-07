@@ -7,10 +7,12 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -251,7 +253,7 @@ func (t TerraformClient) genTfvars() (string, error) {
 func (t TerraformClient) genWithTpl(path string) (string, error) {
 	awsBackend := t.awsBackend
 	if awsBackend != nil {
-		tmpl, err := template.ParseFiles(path)
+		tmpl, err := template.New(filepath.Base(path)).Funcs(sprig.TxtFuncMap()).ParseFiles(path)
 		if err != nil {
 			return "", err
 		}
