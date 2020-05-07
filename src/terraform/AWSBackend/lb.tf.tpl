@@ -30,12 +30,14 @@ resource "aws_lb_target_group" "{{ $name }}_tg" {
   vpc_id      = var.vpc_id
 }
 
-resource "aws_lb_target_group_attachment" "{{ $name }}_tga" {
-  count            = length(var.{{ $name }}_targets)
+{{ range $i, $t := $tg.Targets }}
+
+resource "aws_lb_target_group_attachment" "{{ $name }}_tga_{{ $t.Destination.IP | replace "." "-"  }}_{{ $t.Port }}" {
   target_group_arn = aws_lb_target_group.{{ $name }}_tg.arn
-  target_id        = var.{{ $name }}_targets[count.index].destination
+  target_id        = "{{ $t.Destination.IP }}"
   availability_zone = "ap-northeast-1a"
-  port             = var.{{ $name }}_targets[count.index].port
+  port             = {{ $t.Port }}
 }
 
+{{- end }}
 {{- end }}

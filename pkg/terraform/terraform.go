@@ -7,6 +7,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"path/filepath"
 	"regexp"
 	"text/template"
 	"time"
@@ -252,7 +253,7 @@ func (t TerraformClient) genTfvars() (string, error) {
 func (t TerraformClient) genWithTpl(path string) (string, error) {
 	awsBackend := t.awsBackend
 	if awsBackend != nil {
-		tmpl, err := template.ParseFiles(path)
+		tmpl, err := template.New(filepath.Base(path)).Funcs(sprig.TxtFuncMap()).ParseFiles(path)
 		if err != nil {
 			return "", err
 		}
@@ -263,7 +264,7 @@ func (t TerraformClient) genWithTpl(path string) (string, error) {
 		} else {
 			length = 31
 		}
-		err = tmpl.Funcs(sprig.TxtFuncMap()).Execute(&result, struct {
+		err = tmpl.Execute(&result, struct {
 			Name      string
 			B         *v1beta1.AWSBackend
 			ServiceIn bool
