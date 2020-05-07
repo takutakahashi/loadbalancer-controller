@@ -3,7 +3,7 @@
 OPERATION=$1
 BACKEND=$2
 FORCE=$3
-OPTS="-var-file tfvars"
+OPTS="-var-file tfvars -no-color"
 
 if [[ "$FORCE" = "true" ]]; then
   OPTS="-auto-approve $OPTS"
