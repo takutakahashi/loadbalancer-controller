@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -262,7 +263,7 @@ func (t TerraformClient) genWithTpl(path string) (string, error) {
 		} else {
 			length = 31
 		}
-		err = tmpl.Execute(&result, struct {
+		err = tmpl.Funcs(sprig.TxtFuncMap()).Execute(&result, struct {
 			Name      string
 			B         *v1beta1.AWSBackend
 			ServiceIn bool
