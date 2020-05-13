@@ -40,9 +40,14 @@ type LoadbalancerStatus struct {
 }
 
 type BackendStatus struct {
-	Phase     BackendPhase      `json:"phase"`
-	Internal  bool              `json:"internal"`
-	Endpoint  BackendEndpoint   `json:"endpoint"`
+
+	// +optional
+	Phase BackendPhase `json:"phase,omitempty"`
+	// +optional
+	Internal bool `json:"internal"`
+	// +optional
+	Endpoint BackendEndpoint `json:"endpoint"`
+	// +optional
 	Listeners []BackendListener `json:"listeners"`
 }
 
