@@ -44,11 +44,11 @@ type BackendStatus struct {
 	// +optional
 	Phase BackendPhase `json:"phase,omitempty"`
 	// +optional
-	Internal bool `json:"internal"`
+	Internal bool `json:"internal,omitempty"`
 	// +optional
-	Endpoint BackendEndpoint `json:"endpoint"`
+	Endpoint BackendEndpoint `json:"endpoint,omitempty"`
 	// +optional
-	Listeners []BackendListener `json:"listeners"`
+	Listeners []BackendListener `json:"listeners,omitempty"`
 }
 
 type BackendListener struct {
