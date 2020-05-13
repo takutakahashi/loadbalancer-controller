@@ -302,11 +302,6 @@ spec:
               type: array
             phase:
               type: string
-          required:
-          - endpoint
-          - internal
-          - listeners
-          - phase
           type: object
       type: object
   version: v1beta1

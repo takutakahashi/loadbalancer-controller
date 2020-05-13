@@ -328,11 +328,6 @@ spec:
                       type: array
                     phase:
                       type: string
-                  required:
-                  - endpoint
-                  - internal
-                  - listeners
-                  - phase
                   type: object
               type: object
             ip:
@@ -374,11 +369,6 @@ spec:
                   type: array
                 phase:
                   type: string
-              required:
-              - endpoint
-              - internal
-              - listeners
-              - phase
               type: object
           required:
           - backend
