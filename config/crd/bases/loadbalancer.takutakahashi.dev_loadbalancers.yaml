@@ -54,6 +54,8 @@ spec:
                 spec:
                   description: AWSBackendSpec defines the desired state of AWSBackend
                   properties:
+                    bucketName:
+                      type: string
                     credentials:
                       properties:
                         accessKeyID:
@@ -297,6 +299,7 @@ spec:
                           type: string
                       type: object
                   required:
+                  - bucketName
                   - credentials
                   - listeners
                   type: object

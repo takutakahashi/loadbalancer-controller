@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= takutakahashi/loadbalancer-controller:latest
+IMG ?= takutakahashi/loadbalancer-controller:v0.2.2
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
