@@ -11,10 +11,12 @@ rules:
   resources:
   - configmaps
   verbs:
+  - create
   - delete
   - get
   - list
   - patch
+  - update
 - apiGroups:
   - ""
   resources:
@@ -24,6 +26,13 @@ rules:
   - get
   - list
   - patch
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods/log
+  verbs:
+  - get
   - watch
 - apiGroups:
   - batch

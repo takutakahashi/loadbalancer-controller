@@ -39,8 +39,9 @@ type AWSBackendReconciler struct {
 // +kubebuilder:rbac:groups=loadbalancer.takutakahashi.dev,resources=awsbackends,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=loadbalancer.takutakahashi.dev,resources=awsbackends/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;delete;patch;watch
+// +kubebuilder:rbac:groups="",resources=pods/log,verbs=get;watch
 // +kubebuilder:rbac:groups=batch,resources=jobs,verbs=get;list;create;delete
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;delete;patch
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=create;get;list;delete;update;patch
 
 func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
@@ -64,7 +65,6 @@ func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	if backend.ObjectMeta.DeletionTimestamp != nil {
 		backend.Status.Phase = loadbalancerv1beta1.BackendPhaseDeleting
 	}
-	r.Update(ctx, &backend)
 	return r.reconcile(ctx, backend)
 }
 
