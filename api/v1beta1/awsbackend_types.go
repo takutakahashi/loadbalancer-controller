@@ -43,6 +43,7 @@ type AWSBackendSpec struct {
 	Type        AWSBackendType        `json:"type,omitempty"`
 	VPC         Identifier            `json:"vpc,omitempty"`
 	Region      string                `json:"region,omitempty"`
+	BucketName  string                `json:"bucketName"`
 	Subnets     []Identifier          `json:"subnets,omitempty"`
 	Listeners   []Listener            `json:"listeners"`
 }
