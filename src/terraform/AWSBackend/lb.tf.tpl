@@ -35,7 +35,7 @@ resource "aws_lb_target_group" "{{ $name }}_tg" {
 resource "aws_lb_target_group_attachment" "{{ $name }}_tga_{{ $t.Destination.IP | replace "." "-"  }}_{{ $t.Port }}" {
   target_group_arn = aws_lb_target_group.{{ $name }}_tg.arn
   target_id        = "{{ $t.Destination.IP }}"
-  availability_zone = "ap-northeast-1a"
+  availability_zone = "all"
   port             = {{ $t.Port }}
 }
 
