@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -141,13 +140,13 @@ func (a AWSBackend) ReachableAll() (bool, error) {
 	}
 	reachedList := []BackendListener{}
 	for _, listener := range a.Status.Listeners {
-		for i := 0; i < 300; i++ {
-			reached, _ := a.reachable(listener)
-			if reached {
-				reachedList = append(reachedList, listener)
-				break
-			}
-			time.Sleep(1 * time.Second)
+		reached, err := a.reachable(listener)
+		if err != nil {
+			return false, err
+		}
+		if reached {
+			reachedList = append(reachedList, listener)
+			break
 		}
 	}
 	if len(reachedList) != len(a.Status.Listeners) {
@@ -161,9 +160,8 @@ func (a AWSBackend) reachable(listener BackendListener) (bool, error) {
 	if e == "" {
 		e = a.Status.Endpoint.IP
 	}
-	conn, err := net.Dial(strings.ToLower(listener.Protocol.String()), fmt.Sprintf("%s:%d", e, listener.Port))
+	conn, err := net.DialTimeout(strings.ToLower(listener.Protocol.String()), fmt.Sprintf("%s:%d", e, listener.Port), 2*time.Second)
 	if err != nil {
-		logrus.Debug(err)
 		return false, err
 	}
 	defer conn.Close()

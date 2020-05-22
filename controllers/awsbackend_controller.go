@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -95,8 +96,15 @@ func (r *AWSBackendReconciler) ReconcileVerify(ctx context.Context, backend load
 	backend.Status = status
 	if backend.Status.Internal != true {
 		reached, err := backend.ReachableAll()
-		if err != nil || !reached {
-			return ctrl.Result{Requeue: true}, err
+		if err != nil {
+			r.Log.Info(err.Error())
+			r.Log.Info("task was requeued")
+			return ctrl.Result{Requeue: true, RequeueAfter: 30 * time.Second}, nil
+		}
+		if !reached {
+			r.Log.Info("this endpoint is not reachable")
+			r.Log.Info("task was requeued")
+			return ctrl.Result{Requeue: true, RequeueAfter: 30 * time.Second}, nil
 		}
 	}
 	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseReady
@@ -111,7 +119,8 @@ func (r *AWSBackendReconciler) ReconcileApply(ctx context.Context, backend loadb
 	}
 	err = tc.Apply()
 	if err != nil {
-		return ctrl.Result{Requeue: true}, err
+		r.Log.Info(err.Error())
+		return ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
 	}
 	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseProvisioned
 	return ctrl.Result{}, r.Update(ctx, &backend)
@@ -125,7 +134,8 @@ func (r *AWSBackendReconciler) ReconcileDelete(ctx context.Context, backend load
 	}
 	err = tc.Destroy()
 	if err != nil {
-		return ctrl.Result{}, err
+		r.Log.Info(err.Error())
+		return ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
 	}
 	backend.Finalizers = []string{}
 	backend.Status.Phase = loadbalancerv1beta1.BackendPhaseDeleted
