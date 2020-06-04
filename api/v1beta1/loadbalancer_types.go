@@ -39,54 +39,6 @@ type LoadbalancerStatus struct {
 	Backend BackendStatus `json:"backend"`
 }
 
-type BackendStatus struct {
-
-	// +optional
-	Phase BackendPhase `json:"phase,omitempty"`
-	// +optional
-	Internal bool `json:"internal,omitempty"`
-	// +optional
-	Endpoint BackendEndpoint `json:"endpoint,omitempty"`
-	// +optional
-	Listeners []BackendListener `json:"listeners,omitempty"`
-}
-
-type BackendListener struct {
-	Protocol BackendProtocol `json:"protocol"`
-	Port     int             `json:"port"`
-}
-
-type BackendEndpoint struct {
-	IP  string `json:"IP"`
-	DNS string `json:"DNS"`
-}
-type BackendPhase string
-
-type BackendProtocol string
-
-func (b BackendProtocol) String() string {
-	switch b {
-	case BackendProtocolTCP:
-		return "TCP"
-	case BackendProtocolUDP:
-		return "UDP"
-	default:
-		return ""
-	}
-}
-
-var (
-	BackendProtocolTCP BackendProtocol = "TCP"
-	BackendProtocolUDP BackendProtocol = "UDP"
-)
-var (
-	BackendPhaseProvisioning BackendPhase = "Provisioning"
-	BackendPhaseProvisioned  BackendPhase = "Provisioned"
-	BackendPhaseReady        BackendPhase = "Ready"
-	BackendPhaseDeleting     BackendPhase = "Deleting"
-	BackendPhaseDeleted      BackendPhase = "Deleted"
-)
-
 // +kubebuilder:object:root=true
 
 // Loadbalancer is the Schema for the loadbalancers API

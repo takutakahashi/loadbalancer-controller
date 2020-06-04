@@ -1,22 +1,7 @@
 apiVersion: loadbalancer.takutakahashi.dev/v1beta1
-kind: AWSBackend
+kind: Backend
 metadata:
-  name: aws-nlb-sample
+  name: backend-sample
 spec:
-  target: {}
-  livenessProbe: {}
-  readinessProbe: {}
-status:
-  globalIP: 12.34.56.7
-
----
-apiVersion: loadbalancer.takutakahashi.dev/v1beta1
-kind: ExternalBackend
-metadata:
-  name: external-sample
-spec:
-  globalIP: 12.34.56.8
-  livenessProbe: {}
-  readinessProbe: {}
-status:
-  globalIP: 12.34.56.8
+  # Add fields here
+  foo: bar

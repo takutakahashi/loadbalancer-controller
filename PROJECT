@@ -13,4 +13,7 @@ resources:
 - group: loadbalancer
   kind: Source
   version: v1beta1
+- group: loadbalancer
+  kind: Backend
+  version: v1beta1
 version: "2"
