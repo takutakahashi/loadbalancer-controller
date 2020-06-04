@@ -10,4 +10,7 @@ resources:
 - group: loadbalancer
   kind: ExternalBackend
   version: v1beta1
+- group: loadbalancer
+  kind: Source
+  version: v1beta1
 version: "2"

@@ -90,6 +90,14 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "ExternalBackend")
 		os.Exit(1)
 	}
+	if err = (&controllers.SourceReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Source"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Source")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	setupLog.Info("starting manager")

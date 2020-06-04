@@ -1,0 +1,7 @@
+apiVersion: loadbalancer.takutakahashi.dev/v1beta1
+kind: Source
+metadata:
+  name: source-sample
+spec:
+  # Add fields here
+  foo: bar
