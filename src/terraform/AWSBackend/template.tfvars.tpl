@@ -32,6 +32,7 @@ lb_tags ={
   port = {{ $tg.Port }}
   protocol = "{{ $tg.Protocol }}"
   type = "{{ $tg.TargetType }}"
+  proxy_protocol_v2 = {{ $tg.EnableProxyProtocol }}
 
 }
 

@@ -207,6 +207,8 @@ spec:
                     properties:
                       targetGroup:
                         properties:
+                          enableProxyProtocol:
+                            type: boolean
                           port:
                             type: integer
                           protocol:
@@ -231,6 +233,7 @@ spec:
                               type: object
                             type: array
                         required:
+                        - enableProxyProtocol
                         - port
                         - protocol
                         - targetType
