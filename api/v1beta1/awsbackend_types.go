@@ -64,10 +64,11 @@ type AWSBackendAction struct {
 }
 
 type AWSBackendTargetGroup struct {
-	Port       int                  `json:"port"`
-	Protocol   BackendProtocol      `json:"protocol"`
-	TargetType AWSBackendTargetType `json:"targetType"`
-	Targets    []AWSBackendTarget   `json:"targets"`
+	Port                int                  `json:"port"`
+	Protocol            BackendProtocol      `json:"protocol"`
+	TargetType          AWSBackendTargetType `json:"targetType"`
+	EnableProxyProtocol bool                 `json:"enableProxyProtocol"`
+	Targets             []AWSBackendTarget   `json:"targets"`
 }
 
 type AWSBackendTarget struct {

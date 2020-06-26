@@ -27,6 +27,7 @@ resource "aws_lb_target_group" "{{ $name }}_tg" {
   port        = var.{{ $name }}_target_group.port
   protocol    = var.{{ $name }}_target_group.protocol
   target_type = var.{{ $name }}_target_group.type
+  proxy_protocol_v2 = var.{{ $name }}_target_group.proxy_protocol_v2
   vpc_id      = var.vpc_id
 }
 
