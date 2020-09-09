@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: takutakahashi/loadbalancer-controller
-  newTag: v0.2.3
+  newTag: v0.3.1
