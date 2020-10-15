@@ -236,9 +236,6 @@ func (t TerraformClient) isProcessing() (bool, error) {
 		if !strings.Contains(job.Name, t.awsBackend.Name) {
 			continue
 		}
-		if !strings.Contains(job.Name, t.awsBackend.ResourceVersion) {
-			return true, nil
-		}
 		if job.Status.CompletionTime != nil {
 			return false, nil
 		}
