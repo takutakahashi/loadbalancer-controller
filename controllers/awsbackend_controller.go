@@ -54,7 +54,7 @@ func (r *AWSBackendReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	} else if err != nil {
 		return ctrl.Result{}, err
 	}
-	if backend.Status.Phase == "" {
+	if backend.Status.Phase != loadbalancerv1beta1.BackendPhaseDeleted {
 		backend.Status.Phase = loadbalancerv1beta1.BackendPhaseProvisioning
 	}
 	if backend.ObjectMeta.Finalizers == nil || len(backend.ObjectMeta.Finalizers) == 0 {
