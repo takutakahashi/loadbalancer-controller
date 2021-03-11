@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/Masterminds/sprig"
+	"github.com/sirupsen/logrus"
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -83,41 +84,75 @@ func (t TerraformClient) createConfig() error {
 func (t TerraformClient) ensureJob(ops string, force bool) error {
 	job := t.buildJob(ops, force)
 	c := t.clientset.BatchV1().Jobs(t.awsBackend.Namespace)
-	if _, err := c.Get(job.Name, metav1.GetOptions{}); err == nil {
-		return nil
-	} else if !apierrors.IsNotFound(err) {
+
+	// check processing jobs
+	processing, err := t.isProcessingPreviousJob()
+	logrus.Info(2)
+	if err != nil {
 		return err
 	}
-	_, err := c.Create(&job)
+	logrus.Info(2)
+	if processing {
+		return errors.New("other job is processing")
+	}
+	logrus.Info(2)
+	// delete all jobs related with this LB
+	jobs, err := c.List(metav1.ListOptions{})
+	if err != nil {
+		return err
+	}
+	logrus.Info(2)
+	latestJobAlreadyStarted := false
+	for _, j := range jobs.Items {
+		logrus.Info(3)
+		if j.Name == t.getLatestJobName() {
+			latestJobAlreadyStarted = true
+			continue
+		}
+		if !strings.Contains(j.Name, t.awsBackend.Name) {
+			continue
+		}
+		err = c.Delete(j.Name, &metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	logrus.Info(2)
+	if latestJobAlreadyStarted {
+		return nil
+	}
+	logrus.Info(2)
+
+	// create new job
+	_, err = c.Create(&job)
 	return err
 }
 
 func (t TerraformClient) execute(ops string, force bool, watch bool) error {
-	err := t.createConfig()
-	if err != nil {
+	if err := t.createConfig(); err != nil {
+		logrus.Info(1)
 		return err
 	}
-	processing, err := t.isProcessing()
-	if err != nil {
+	logrus.Info(0)
+	if err := t.ensureJob(ops, force); err != nil {
+		logrus.Info(1)
 		return err
 	}
-	if processing {
-		return errors.New("before task is processing")
-	}
-	err = t.ensureJob(ops, force)
-	if err != nil {
-		return err
-	}
-	if !watch {
-		return nil
-	} else {
-		err = t.watchCompleteOrError()
-		if err != nil {
-			return err
-		}
+	logrus.Info(0)
 
-		return t.cleanup()
+	if !watch {
+		logrus.Info(1)
+		return nil
 	}
+	logrus.Info(0)
+
+	if err := t.watchCompleteOrError(); err != nil {
+		logrus.Info(1)
+		return err
+	}
+	logrus.Info(0)
+
+	return t.cleanup()
 }
 
 func (t TerraformClient) cleanup() error {
@@ -222,7 +257,11 @@ func (t TerraformClient) updateReport(job *batchv1.Job) error {
 	return err
 }
 
-func (t TerraformClient) isProcessing() (bool, error) {
+func (t TerraformClient) getLatestJobName() string {
+	return fmt.Sprintf("%s-%s", t.awsBackend.Name, t.awsBackend.ResourceVersion)
+}
+
+func (t TerraformClient) isProcessingPreviousJob() (bool, error) {
 	c := t.clientset.BatchV1().Jobs(t.awsBackend.Namespace)
 	opt := metav1.ListOptions{}
 	jobs, err := c.List(opt)
@@ -233,15 +272,11 @@ func (t TerraformClient) isProcessing() (bool, error) {
 		return false, err
 	}
 	for _, job := range jobs.Items {
-		if !strings.Contains(job.Name, t.awsBackend.Name) {
+		if job.Name == t.getLatestJobName() {
 			continue
 		}
-		if job.Status.CompletionTime != nil {
-			return false, nil
-		}
-
-		if job.Status.Failed > 0 {
-			return false, nil
+		if strings.Contains(job.Name, t.awsBackend.Name) && job.Status.CompletionTime == nil {
+			return true, nil
 		}
 	}
 	return false, nil
