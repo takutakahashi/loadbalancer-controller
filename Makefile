@@ -10,6 +10,8 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+tag = $(or $(word 2,$(subst :, ,$1)),$(value 2))
+TAG=$(call tag,${IMG},latest)
 
 all: manager
 
@@ -81,4 +83,5 @@ endif
 
 release: manifests
 	cd config/manager && kustomize edit set image controller=${IMG}
+	sed -i "s/latest/${TAG}/" config/default/daemon_version.yaml
 	kustomize build config/default > ./release.yaml
