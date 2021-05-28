@@ -78,3 +78,7 @@ CONTROLLER_GEN=$(GOBIN)/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
+
+release: manifests
+        cd config/manager && kustomize edit set image controller=${IMG}
+        kustomize build config/default > ./release.yaml
