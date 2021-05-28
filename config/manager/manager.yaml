@@ -29,6 +29,9 @@ spec:
         - --enable-leader-election
         image: controller:latest
         name: manager
+        env:
+          - name: DAEMON_VERSION
+            value: latest
         resources:
           limits:
             cpu: 100m

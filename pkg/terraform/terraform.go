@@ -372,6 +372,11 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 			ValueFrom: t.awsBackend.Spec.Credentials.SecretAccesskey,
 		},
 	}
+	version := os.Getenv("DAEMON_VERSION")
+	if version == "" {
+		version = "latest"
+	}
+	image := fmt.Sprintf("%s:%s", "ghcr.io/takutakahashi/loadbalancer-controller-daemon", version)
 	return batchv1.Job{
 		ObjectMeta: om,
 		Spec: batchv1.JobSpec{
@@ -383,14 +388,14 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 					InitContainers: []corev1.Container{
 						{
 							Name:         "plan",
-							Image:        "takutakahashi/loadbalancer-controller-toolkit",
+							Image:        image,
 							Command:      []string{"/bin/terraform.sh", "plan", t.awsBackend.Kind},
 							VolumeMounts: vm,
 							Env:          env,
 						},
 						{
 							Name:         "tf",
-							Image:        "takutakahashi/loadbalancer-controller-toolkit",
+							Image:        image,
 							Command:      cmd,
 							VolumeMounts: vm,
 							Env:          env,
@@ -399,7 +404,7 @@ func (t TerraformClient) buildJob(ops string, force bool) batchv1.Job {
 					Containers: []corev1.Container{
 						{
 							Name:         "show",
-							Image:        "takutakahashi/loadbalancer-controller-toolkit",
+							Image:        image,
 							Command:      []string{"/bin/terraform.sh", "show", t.awsBackend.Kind},
 							VolumeMounts: vm,
 							Env:          env,
