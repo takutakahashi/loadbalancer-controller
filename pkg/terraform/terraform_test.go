@@ -26,10 +26,10 @@ func TestBuildJob(t *testing.T) {
 	}
 	job := cli.buildJob("plan", false)
 	expected := []string{"/bin/terraform.sh", "plan", "AWSBackend"}
-	if len(job.Spec.Template.Spec.Containers[0].Command) != len(expected) {
+	if len(job.Spec.Template.Spec.InitContainers[1].Command) != len(expected) {
 		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
 	}
-	for i, s := range job.Spec.Template.Spec.Containers[0].Command {
+	for i, s := range job.Spec.Template.Spec.InitContainers[1].Command {
 		if s != expected[i] {
 			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
 		}
