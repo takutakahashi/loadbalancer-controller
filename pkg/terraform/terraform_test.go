@@ -61,12 +61,12 @@ func TestExecute(t *testing.T) {
 	}
 
 	expected := []string{"/bin/terraform.sh", "plan", "AWSBackend"}
-	if len(job.Spec.Template.Spec.Containers[0].Command) != len(expected) {
-		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+	if len(job.Spec.Template.Spec.InitContainers[1].Command) != len(expected) {
+		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.InitContainers[1].Command)
 	}
-	for i, s := range job.Spec.Template.Spec.Containers[0].Command {
+	for i, s := range job.Spec.Template.Spec.InitContainers[1].Command {
 		if s != expected[i] {
-			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.InitContainers[1].Command)
 		}
 	}
 	cm, err := clientset.CoreV1().ConfigMaps(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
@@ -98,13 +98,13 @@ func TestApply(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := []string{"/bin/terraform.sh", "apply", "AWSBackend", "force"}
-	if len(job.Spec.Template.Spec.Containers[0].Command) != len(expected) {
-		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+	expected := []string{"/bin/terraform.sh", "apply", "AWSBackend", "true"}
+	if len(job.Spec.Template.Spec.InitContainers[1].Command) != len(expected) {
+		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.InitContainers[1].Command)
 	}
-	for i, s := range job.Spec.Template.Spec.Containers[0].Command {
+	for i, s := range job.Spec.Template.Spec.InitContainers[1].Command {
 		if s != expected[i] {
-			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
+			t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.InitContainers[1].Command)
 		}
 	}
 	cm, err := clientset.CoreV1().ConfigMaps(cli.awsBackend.Namespace).Get(cli.awsBackend.Name, metav1.GetOptions{})
