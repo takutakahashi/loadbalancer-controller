@@ -3,6 +3,7 @@ package terraform
 import (
 	"testing"
 
+	"fmt"
 	"github.com/takutakahashi/loadbalancer-controller/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -47,12 +48,18 @@ func TestExecute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	cli.clientset = clientset
 	err = cli.execute("plan", false, false)
-	job, err := clientset.BatchV1().Jobs(lb.Namespace).Get(lb.Spec.AWSBackend.Name, metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	job, err := clientset.BatchV1().Jobs(lb.Namespace).Get(fmt.Sprintf("%s-%s", lb.Spec.AWSBackend.Name, lb.Spec.AWSBackend.ResourceVersion), metav1.GetOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	expected := []string{"/bin/terraform.sh", "plan", "AWSBackend"}
 	if len(job.Spec.Template.Spec.Containers[0].Command) != len(expected) {
 		t.Fatalf("expected: %v, actual: %v", expected, job.Spec.Template.Spec.Containers[0].Command)
@@ -87,7 +94,7 @@ func TestApply(t *testing.T) {
 	}
 	cli.clientset = clientset
 	err = cli.Apply()
-	job, err := clientset.BatchV1().Jobs(lb.Namespace).Get(lb.Spec.AWSBackend.Name, metav1.GetOptions{})
+	job, err := clientset.BatchV1().Jobs(lb.Namespace).Get(fmt.Sprintf("%s-%s", lb.Spec.AWSBackend.Name, lb.Spec.AWSBackend.ResourceVersion), metav1.GetOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,6 +145,7 @@ func awsBackendMock() v1beta1.AWSBackend {
 			Annotations: map[string]string{
 				"hello": "world",
 			},
+			ResourceVersion: "12345",
 		},
 		Spec: v1beta1.AWSBackendSpec{
 			Internal: false,
